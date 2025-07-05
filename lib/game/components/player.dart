@@ -3,7 +3,8 @@ import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
-import 'package:game_permainan_tradisional_simulasi/models/game_state.dart';
+import '../../models/game_state.dart';
+import '../../utils/game_constants.dart';
 import 'hadang_field.dart';
 
 class HadangPlayer extends CircleComponent with HasCollisionDetection, CollisionCallbacks {
@@ -17,22 +18,25 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   Vector2? _targetPosition;
   Vector2 _lastValidPosition = Vector2.zero();
   
-  // Movement tracking
+  // Movement tracking (untuk aturan game)
   final List<Vector2> _movementHistory = [];
   bool _hasMovedThisPhase = false;
   bool _scoreProcessed = false;
+  DateTime? _lastMoveTime;
   
   // Animation and visual
   late Paint _playerPaint;
   late Paint _shadowPaint;
   late Paint _outlinePaint;
+  late Paint _teamColorPaint;
   bool _isSelected = false;
   bool _isMoving = false;
+  double _animationScale = 1.0;
   
-  // Movement constraints
-  static const double playerRadius = 15.0;
-  static const double movementSpeed = 200.0;
-  static const double guardLineTolerrance = 20.0;
+  // Performance tracking
+  int _touchesMade = 0;
+  int _scoresMade = 0;
+  double _totalDistanceMoved = 0.0;
 
   HadangPlayer({
     required this.playerId,
@@ -40,39 +44,60 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     required PlayerRole initialRole,
     required this.playerColor,
   }) : _currentRole = initialRole {
-    radius = playerRadius;
+    radius = GameConstants.playerRadius;
     anchor = Anchor.center;
     
-    // Setup collision
+    // Setup collision dengan radius yang tepat
     add(CircleHitbox(radius: radius));
     
     _initializePaints();
   }
   
   void _initializePaints() {
+    // Main player color
     _playerPaint = Paint()
       ..color = playerColor
       ..style = PaintingStyle.fill;
     
+    // Team color untuk secondary elements
+    _teamColorPaint = Paint()
+      ..color = team == PlayerTeam.teamA ? GameColors.teamALight : GameColors.teamBLight
+      ..style = PaintingStyle.fill;
+    
+    // Shadow
     _shadowPaint = Paint()
       ..color = Colors.black.withOpacity(0.3)
       ..style = PaintingStyle.fill;
     
+    // Outline berdasarkan role
     _outlinePaint = Paint()
-      ..color = _currentRole == PlayerRole.guard ? Colors.white : Colors.yellow
+      ..color = _getOutlineColor()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+      ..strokeWidth = 3.0;
   }
   
+  Color _getOutlineColor() {
+    if (_currentRole == PlayerRole.guard) {
+      return Colors.white;
+    } else {
+      return Colors.yellow;
+    }
+  }
+  
+  // Getters
   PlayerRole get currentRole => _currentRole;
   bool get hasMovedThisPhase => _hasMovedThisPhase;
   bool get scoreProcessed => _scoreProcessed;
   bool get isMoving => _isMoving;
+  int get touchesMade => _touchesMade;
+  int get scoresMade => _scoresMade;
+  double get totalDistanceMoved => _totalDistanceMoved;
   
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     _lastValidPosition = position.clone();
+    _lastMoveTime = DateTime.now();
   }
   
   @override
@@ -85,6 +110,7 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     
     _updateMovementHistory();
     _validatePosition();
+    _updateAnimations(dt);
   }
   
   void _moveTowardsTarget(double dt) {
@@ -101,14 +127,17 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
       return;
     }
     
-    final velocity = direction.normalized() * movementSpeed * dt;
+    final velocity = direction.normalized() * GameConstants.playerMovementSpeed * dt;
     final newPosition = position + velocity;
     
     if (_isValidMove(newPosition)) {
+      final moveDistance = position.distanceTo(newPosition);
       position = newPosition;
       _lastValidPosition = position.clone();
       _hasMovedThisPhase = true;
       _isMoving = true;
+      _lastMoveTime = DateTime.now();
+      _totalDistanceMoved += moveDistance;
     } else {
       _targetPosition = null;
       _isMoving = false;
@@ -118,6 +147,11 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   void _onReachedTarget() {
     _addMovementToHistory(position);
     _checkScoring();
+    
+    // Check achievement untuk movement
+    if (_totalDistanceMoved > 500) {
+      print('Player ${team.name}$playerId: Marathon runner!');
+    }
   }
   
   bool _isValidMove(Vector2 newPosition) {
@@ -134,27 +168,26 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   bool _isValidGuardMove(Vector2 newPosition, HadangField field) {
     if (_assignedLine == null) return false;
     
-    // Guards must stay on their assigned line
-    return _assignedLine!.isPointOnLine(newPosition); // Removed the second argument
+    // Guards harus tetap di garis yang ditugaskan
+    return _assignedLine!.isPointOnLine(newPosition);
   }
   
   bool _isValidAttackerMove(Vector2 newPosition, HadangField field) {
     // Check basic field boundaries
     if (!field.isPointInField(newPosition)) {
-      // Allow slight overflow for start/finish areas
-      if (newPosition.y < field.fieldRect.top - 30 || 
-          newPosition.y > field.fieldRect.bottom + 30) {
-        return true; // Start/finish areas
+      // Allow overflow untuk start/finish areas
+      if (field.isPointInStartArea(newPosition) || field.isPointInFinishArea(newPosition)) {
+        return true;
       }
       return false;
     }
     
-    // Check side line rule - attackers cannot go outside side lines
+    // Check side line rule - attackers tidak boleh keluar garis samping
     if (field.isPointOnSideLine(newPosition)) {
       return false;
     }
     
-    // Check forward movement rule - cannot move backward once advanced
+    // Check forward movement rule - tidak boleh mundur setelah maju
     return _isForwardMovement(newPosition, field);
   }
   
@@ -162,13 +195,14 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     if (_movementHistory.isEmpty) return true;
     
     final lastPosition = _movementHistory.last;
+    final fieldCenterY = (field.fieldRect.top + field.fieldRect.bottom) / 2;
     
-    // For attackers moving from start to finish (top to bottom)
-    if (lastPosition.y < (field.fieldRect.top + field.fieldRect.bottom) / 2) {
-      // In top half, must move forward (down) or sideways
+    // Untuk attackers bergerak dari start ke finish (top ke bottom)
+    if (lastPosition.y < fieldCenterY) {
+      // Di bagian atas, harus bergerak maju (down) atau menyamping
       return newPosition.y >= lastPosition.y - 10; // Small tolerance
     } else {
-      // In bottom half, can move anywhere (returning)
+      // Di bagian bawah, bisa bergerak kemanapun (returning)
       return true;
     }
   }
@@ -176,19 +210,20 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   void _addMovementToHistory(Vector2 position) {
     _movementHistory.add(position.clone());
     
-    // Keep only recent history
-    if (_movementHistory.length > 10) {
+    // Keep only recent history untuk performance
+    if (_movementHistory.length > 20) {
       _movementHistory.removeAt(0);
     }
   }
   
   void _updateMovementHistory() {
-    // Update history periodically even during movement
-    int updateCounter = 0;
-    updateCounter++;
-    
-    if (updateCounter % 30 == 0) { // Every ~0.5 seconds
-      _addMovementToHistory(position);
+    // Update history secara periodik
+    if (_isMoving) {
+      final now = DateTime.now();
+      if (_lastMoveTime != null && now.difference(_lastMoveTime!).inMilliseconds > 500) {
+        _addMovementToHistory(position);
+        _lastMoveTime = now;
+      }
     }
   }
   
@@ -197,11 +232,23 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     if (field == null) return;
     
     if (!_isValidMove(position)) {
-      // Revert to last valid position
+      // Revert ke posisi valid terakhir
       position = _lastValidPosition.clone();
       _targetPosition = null;
       _isMoving = false;
     }
+  }
+  
+  void _updateAnimations(double dt) {
+    // Scale animation saat bergerak
+    final targetScale = _isMoving ? 1.1 : (_isSelected ? 1.05 : 1.0);
+    _animationScale = _lerp(_animationScale, targetScale, dt * 5.0);
+    
+    scale = Vector2.all(_animationScale);
+  }
+  
+  double _lerp(double a, double b, double t) {
+    return a + (b - a) * t.clamp(0.0, 1.0);
   }
   
   void _checkScoring() {
@@ -211,16 +258,21 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     final field = parent?.children.whereType<HadangField>().firstOrNull;
     if (field == null) return;
     
-    // Check if reached finish line
-    if (position.y >= field.fieldRect.bottom + 10) {
+    // Check jika mencapai finish line
+    if (field.isPointInFinishArea(position)) {
       _scoreProcessed = true;
+      _scoresMade++;
+      return;
     }
     
-    // Check if returned to start line
-    if (position.y <= field.fieldRect.top - 10 && _movementHistory.isNotEmpty) {
-      final hasReachedFinish = _movementHistory.any((pos) => pos.y >= field.fieldRect.bottom);
+    // Check jika kembali ke start line setelah melewati finish
+    if (field.isPointInStartArea(position) && _movementHistory.isNotEmpty) {
+      final hasReachedFinish = _movementHistory.any((pos) => 
+          field.isPointInFinishArea(pos));
+      
       if (hasReachedFinish) {
         _scoreProcessed = true;
+        _scoresMade++;
       }
     }
   }
@@ -233,30 +285,36 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     _scoreProcessed = true;
   }
   
-  // Touch detection for guards
+  // Touch detection untuk guards
   bool canTouch(HadangPlayer attacker) {
     if (_currentRole != PlayerRole.guard) return false;
     if (attacker._currentRole != PlayerRole.attacker) return false;
     if (_assignedLine == null) return false;
     
-    // Check if guard is on their line
-    if (!_assignedLine!.isPointOnLine(position)) { // Removed the second argument
+    // Check jika guard ada di garis mereka
+    if (!_assignedLine!.isPointOnLine(position)) {
       return false;
     }
     
-    // Check if attacker is in touchable area
+    // Check jika attacker dalam jangkauan sentuhan
     return _isAttackerInTouchableArea(attacker);
   }
   
   bool _isAttackerInTouchableArea(HadangPlayer attacker) {
     if (_assignedLine == null) return false;
     
+    final distance = position.distanceTo(attacker.position);
+    
+    if (distance > GameConstants.touchDetectionRadius) {
+      return false;
+    }
+    
     if (_assignedLine!.lineType == GuardLineType.horizontal) {
-      // Horizontal guard can touch attackers crossing their line
-      return (attacker.position.y - _assignedLine!.start.y).abs() < 30;
+      // Horizontal guard bisa menyentuh attackers yang melewati garis mereka
+      return (attacker.position.y - _assignedLine!.start.y).abs() < GameConstants.touchDetectionRadius;
     } else {
-      // Vertical guard (sodor) can touch in center area
-      return (attacker.position.x - _assignedLine!.start.x).abs() < 30;
+      // Vertical guard (sodor) bisa menyentuh di area tengah
+      return (attacker.position.x - _assignedLine!.start.x).abs() < GameConstants.touchDetectionRadius;
     }
   }
   
@@ -268,12 +326,19 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   // Movement control
   void moveTowards(Vector2 target) {
     if (_currentRole == PlayerRole.guard && _assignedLine != null) {
-      // Guards move along their assigned line
+      // Guards bergerak sepanjang garis yang ditugaskan
       _targetPosition = _assignedLine!.getClosestPointOnLine(target);
     } else if (_currentRole == PlayerRole.attacker) {
-      // Attackers move freely (with validation)
+      // Attackers bergerak bebas (dengan validasi)
       _targetPosition = target.clone();
     }
+    
+    _isSelected = true;
+    
+    // Auto-deselect setelah beberapa detik
+    Future.delayed(GameConstants.uiTransitionDuration, () {
+      _isSelected = false;
+    });
   }
   
   void setPosition(Vector2 newPosition) {
@@ -290,6 +355,17 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     
     _initializePaints();
     _resetForNewRole();
+    
+    // Add switch effect
+    add(
+      ScaleEffect.by(
+        Vector2.all(1.3),
+        EffectController(
+          duration: GameConstants.touchEffectDuration.inMilliseconds / 1000.0,
+          reverseDuration: GameConstants.touchEffectDuration.inMilliseconds / 1000.0,
+        ),
+      ),
+    );
   }
   
   void assignToLine(GuardLine line) {
@@ -302,11 +378,17 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     _hasMovedThisPhase = false;
     _scoreProcessed = false;
     _movementHistory.clear();
+    _lastMoveTime = DateTime.now();
   }
   
   void reset() {
     _resetForNewRole();
     _isSelected = false;
+    _touchesMade = 0;
+    _scoresMade = 0;
+    _totalDistanceMoved = 0.0;
+    _animationScale = 1.0;
+    scale = Vector2.all(1.0);
   }
   
   void select() {
@@ -320,27 +402,34 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   @override
   void render(Canvas canvas) {
     // Draw shadow
-    final shadowOffset = Offset(2, 2);
-    canvas.drawCircle(shadowOffset, radius, _shadowPaint);
+    final shadowOffset = Offset(3, 3);
+    canvas.drawCircle(shadowOffset, radius * _animationScale, _shadowPaint);
+    
+    // Draw team color background (larger circle)
+    canvas.drawCircle(Offset.zero, radius * _animationScale * 1.1, _teamColorPaint);
     
     // Draw player body
-    canvas.drawCircle(Offset.zero, radius, _playerPaint);
+    canvas.drawCircle(Offset.zero, radius * _animationScale, _playerPaint);
     
-    // Draw outline
-    if (_isSelected || _isMoving) {
-      _outlinePaint.strokeWidth = _isSelected ? 3.0 : 2.0;
-      canvas.drawCircle(Offset.zero, radius, _outlinePaint);
+    // Draw outline berdasarkan status
+    if (_isSelected || _isMoving || _currentRole == PlayerRole.guard) {
+      _outlinePaint.strokeWidth = _isSelected ? 4.0 : 3.0;
+      _outlinePaint.color = _getOutlineColor();
+      canvas.drawCircle(Offset.zero, radius * _animationScale, _outlinePaint);
     }
     
-    // Draw player number
+    // Draw player elements
     _drawPlayerNumber(canvas);
-    
-    // Draw role indicator
     _drawRoleIndicator(canvas);
     
-    // Draw movement trail
-    if (_isMoving && _currentRole == PlayerRole.attacker) {
+    // Draw movement trail untuk attackers
+    if (GameSettings.showMovementTrails && _isMoving && _currentRole == PlayerRole.attacker) {
       _drawMovementTrail(canvas);
+    }
+    
+    // Draw performance indicators
+    if (_touchesMade > 0 || _scoresMade > 0) {
+      _drawPerformanceIndicators(canvas);
     }
   }
   
@@ -348,13 +437,13 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     final textPaint = TextPaint(
       style: TextStyle(
         color: Colors.white,
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.bold,
         shadows: [
           Shadow(
             offset: const Offset(1, 1),
             blurRadius: 2,
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withOpacity(0.8),
           ),
         ],
       ),
@@ -372,23 +461,45 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     final indicatorPaint = Paint()
       ..style = PaintingStyle.fill;
     
+    final strokePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    
     if (_currentRole == PlayerRole.guard) {
-      // Draw shield icon for guards
-      indicatorPaint.color = Colors.white;
-      final shieldRect = Rect.fromCircle(
-        center: Offset(radius - 5, -radius + 5),
-        radius: 4,
-      );
-      canvas.drawRect(shieldRect, indicatorPaint);
+      // Draw shield icon untuk guards
+      indicatorPaint.color = Colors.orange;
+      
+      final shieldPath = Path();
+      final centerX = radius - 8;
+      final centerY = -radius + 8;
+      
+      shieldPath.moveTo(centerX, centerY - 6);
+      shieldPath.lineTo(centerX - 4, centerY);
+      shieldPath.lineTo(centerX, centerY + 6);
+      shieldPath.lineTo(centerX + 4, centerY);
+      shieldPath.close();
+      
+      canvas.drawPath(shieldPath, indicatorPaint);
+      canvas.drawPath(shieldPath, strokePaint);
     } else {
-      // Draw arrow icon for attackers
-      indicatorPaint.color = Colors.yellow;
+      // Draw arrow icon untuk attackers
+      indicatorPaint.color = Colors.lightGreen;
+      
       final arrowPath = Path();
-      arrowPath.moveTo(radius - 8, -radius + 5);
-      arrowPath.lineTo(radius - 2, -radius + 5);
-      arrowPath.lineTo(radius - 5, -radius + 2);
-      arrowPath.close();
-      canvas.drawPath(arrowPath, indicatorPaint);
+      final centerX = radius - 8;
+      final centerY = -radius + 8;
+      
+      arrowPath.moveTo(centerX - 3, centerY + 3);
+      arrowPath.lineTo(centerX + 3, centerY);
+      arrowPath.lineTo(centerX - 3, centerY - 3);
+      arrowPath.moveTo(centerX + 3, centerY);
+      arrowPath.lineTo(centerX - 1, centerY);
+      
+      canvas.drawPath(arrowPath, Paint()
+        ..color = Colors.lightGreen
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0);
     }
   }
   
@@ -396,24 +507,83 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
     if (_movementHistory.length < 2) return;
     
     final trailPaint = Paint()
-      ..color = playerColor.withOpacity(0.3)
+      ..color = playerColor.withOpacity(0.4)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
+      ..strokeWidth = 4.0;
     
     final path = Path();
-    path.moveTo(
-      _movementHistory.first.x - position.x,
-      _movementHistory.first.y - position.y,
-    );
+    bool firstPoint = true;
     
-    for (int i = 1; i < _movementHistory.length; i++) {
-      path.lineTo(
-        _movementHistory[i].x - position.x,
-        _movementHistory[i].y - position.y,
-      );
+    for (final historyPoint in _movementHistory) {
+      final localPoint = historyPoint - position;
+      
+      if (firstPoint) {
+        path.moveTo(localPoint.x, localPoint.y);
+        firstPoint = false;
+      } else {
+        path.lineTo(localPoint.x, localPoint.y);
+      }
     }
     
     canvas.drawPath(path, trailPaint);
+  }
+  
+  void _drawPerformanceIndicators(Canvas canvas) {
+    if (_touchesMade > 0) {
+      // Draw touch count untuk guards
+      final touchPaint = Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(
+        Offset(-radius + 5, radius - 5),
+        6,
+        touchPaint,
+      );
+      
+      final textPaint = TextPaint(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      
+      textPaint.render(
+        canvas,
+        '$_touchesMade',
+        Vector2(-radius + 5, radius - 5),
+        anchor: Anchor.center,
+      );
+    }
+    
+    if (_scoresMade > 0) {
+      // Draw score count untuk attackers
+      final scorePaint = Paint()
+        ..color = Colors.green
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(
+        Offset(radius - 5, radius - 5),
+        6,
+        scorePaint,
+      );
+      
+      final textPaint = TextPaint(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      
+      textPaint.render(
+        canvas,
+        '$_scoresMade',
+        Vector2(radius - 5, radius - 5),
+        anchor: Anchor.center,
+      );
+    }
   }
   
   @override
@@ -430,15 +600,55 @@ class HadangPlayer extends CircleComponent with HasCollisionDetection, Collision
   }
   
   void _handleTouch(HadangPlayer attacker) {
+    _touchesMade++;
+    
     // Create touch effect
     add(
       ScaleEffect.by(
-        Vector2.all(1.2),
-        EffectController(duration: 0.2, reverseDuration: 0.2),
+        Vector2.all(1.4),
+        EffectController(
+          duration: GameConstants.touchEffectDuration.inMilliseconds / 1000.0,
+          reverseDuration: GameConstants.touchEffectDuration.inMilliseconds / 1000.0,
+        ),
       ),
     );
     
-    // Signal game for team switch
-    print('Guard ${team.name}$playerId touched attacker ${attacker.team.name}${attacker.playerId}');
+    // Add color flash effect
+    add(
+      ColorEffect(
+        Colors.yellow,
+        EffectController(
+          duration: GameConstants.touchEffectDuration.inMilliseconds / 1000.0,
+        ),
+      ),
+    );
+    
+    print('Guard ${team.name}$playerId touched attacker ${attacker.team.name}${attacker.playerId} (Total touches: $_touchesMade)');
+  }
+  
+  // Performance analytics
+  Map<String, dynamic> getPlayerStats() {
+    final playTime = _lastMoveTime != null 
+        ? DateTime.now().difference(_lastMoveTime!).inMinutes 
+        : 0;
+    
+    return {
+      'playerId': playerId,
+      'team': team.name,
+      'role': _currentRole.name,
+      'touchesMade': _touchesMade,
+      'scoresMade': _scoresMade,
+      'totalDistance': _totalDistanceMoved.toStringAsFixed(1),
+      'playTime': playTime,
+      'efficiency': _calculateEfficiency(),
+    };
+  }
+  
+  double _calculateEfficiency() {
+    if (_currentRole == PlayerRole.guard) {
+      return _touchesMade > 0 ? _touchesMade / (_totalDistanceMoved / 100) : 0.0;
+    } else {
+      return _scoresMade > 0 ? _scoresMade / (_totalDistanceMoved / 200) : 0.0;
+    }
   }
 }
