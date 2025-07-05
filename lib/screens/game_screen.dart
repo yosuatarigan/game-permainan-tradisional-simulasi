@@ -1,4 +1,5 @@
 // File: lib/screens/game_screen.dart  
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../game/hadang_game.dart';
@@ -18,12 +19,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   
   String _currentTime = '15:00';
   bool _isPaused = false;
+  bool _gameLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _initializeGame();
     _initializeAnimations();
+    _waitForGameLoad();
   }
 
   void _initializeGame() {
@@ -33,6 +36,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       print('Error initializing game: $e');
       game = HadangGame();
     }
+  }
+
+  void _waitForGameLoad() {
+    // Wait for game to load before updating UI
+    Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (game.isLoaded) {
+        setState(() {
+          _gameLoaded = true;
+        });
+        timer.cancel();
+      }
+    });
   }
 
   void _initializeAnimations() {
@@ -143,13 +158,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         children: [
           _buildScoreCard(
             GameTexts.teamRed, 
-            game.scoreTeamA, 
+            _gameLoaded ? game.scoreTeamA : 0, 
             GameColors.teamAColor
           ),
           _buildTimeCard(),
           _buildScoreCard(
             GameTexts.teamBlue, 
-            game.scoreTeamB, 
+            _gameLoaded ? game.scoreTeamB : 0, 
             GameColors.teamBColor
           ),
         ],
@@ -226,7 +241,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
               child: Text(
-                _currentTime,
+                _gameLoaded ? game.gameTime.toGameTime() : _currentTime,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -265,11 +280,62 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   Widget _buildGameWidget() {
     try {
-      return game.widget;
+      // Show loading indicator if game not loaded
+      if (!_gameLoaded) {
+        return _buildLoadingWidget();
+      }
+      
+      // Wrap dengan GestureDetector untuk tap handling
+      return GestureDetector(
+        onTapDown: (details) {
+          try {
+            if (_gameLoaded) {
+              // Call game method untuk move closest attacker
+              game.moveClosestAttacker(details.localPosition);
+            }
+          } catch (e) {
+            print('Error handling tap in UI: $e');
+          }
+        },
+        child: game.widget,
+      );
     } catch (e) {
       print('Error building game widget: $e');
       return _buildErrorWidget();
     }
+  }
+
+  Widget _buildLoadingWidget() {
+    return Container(
+      color: GameColors.fieldBackground,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(GameColors.primaryGreen),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading ${GameTexts.appTitle}...',
+              style: TextStyle(
+                color: GameColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              GameTexts.appSubtitle,
+              style: TextStyle(
+                color: GameColors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildErrorWidget() {
@@ -376,12 +442,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     
     try {
-      game.restartGame();
-      _currentTime = GameConstants.halfDuration.toGameTime();
-      _isPaused = false;
-      setState(() {});
-      
-      _showGameMessage(GameTexts.gameStarted);
+      if (_gameLoaded) {
+        game.restartGame();
+        _currentTime = GameConstants.halfDuration.toGameTime();
+        _isPaused = false;
+        setState(() {});
+        
+        _showGameMessage(GameTexts.gameStarted);
+      }
     } catch (e) {
       print('Error restarting game: $e');
     }
@@ -393,11 +461,13 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     
     try {
-      game.pauseResumeGame();
-      _isPaused = !_isPaused;
-      setState(() {});
-      
-      _showGameMessage(_isPaused ? 'Game Paused' : 'Game Resumed');
+      if (_gameLoaded) {
+        game.pauseResumeGame();
+        _isPaused = !_isPaused;
+        setState(() {});
+        
+        _showGameMessage(_isPaused ? 'Game Paused' : 'Game Resumed');
+      }
     } catch (e) {
       print('Error toggling pause: $e');
       _isPaused = !_isPaused;
@@ -411,12 +481,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     
     try {
-      game.switchTeams();
-      _scoreAnimationController.forward().then((_) {
-        _scoreAnimationController.reset();
-      });
-      
-      _showGameMessage(GameTexts.teamSwitched);
+      if (_gameLoaded) {
+        game.switchTeams();
+        _scoreAnimationController.forward().then((_) {
+          _scoreAnimationController.reset();
+        });
+        
+        _showGameMessage(GameTexts.teamSwitched);
+      }
     } catch (e) {
       print('Error switching teams: $e');
     }

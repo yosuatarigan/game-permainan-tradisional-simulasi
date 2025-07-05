@@ -1,4 +1,4 @@
-// File: lib/game/hadang_game.dart (Simplified Version)
+// File: lib/game/hadang_game.dart (Fixed Initialization)
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -9,19 +9,22 @@ import 'components/hadang_field.dart';
 import 'components/player.dart';
 
 class HadangGame extends FlameGame with HasCollisionDetection {
-  // Game State
-  late HadangGameState gameState;
-  late HadangField field;
+  // Game State - Initialize immediately
+  late HadangGameState gameState = HadangGameState();
+  HadangField? field;
+  
+  // Loading state
+  bool _isLoaded = false;
   
   // Components
   final List<HadangPlayer> teamAPlayers = [];
   final List<HadangPlayer> teamBPlayers = [];
   
   // UI Components
-  late TextComponent scoreDisplay;
-  late TextComponent timeDisplay;
-  late TextComponent gamePhaseDisplay;
-  late TextComponent gameEventsDisplay;
+  TextComponent? scoreDisplay;
+  TextComponent? timeDisplay;
+  TextComponent? gamePhaseDisplay;
+  TextComponent? gameEventsDisplay;
   
   // Game Statistics
   int _totalTouches = 0;
@@ -29,14 +32,15 @@ class HadangGame extends FlameGame with HasCollisionDetection {
   int _teamBSwitches = 0;
   DateTime? _gameStartTime;
   
-  // Public getters for UI
-  int get scoreTeamA => gameState.scoreTeamA;
-  int get scoreTeamB => gameState.scoreTeamB;
-  String get currentPhase => gameState.getCurrentPhaseDisplay();
-  bool get isPaused => gameState.isPaused;
-  Duration get gameTime => gameState.gameTime;
+  // Public getters for UI with safe defaults
+  int get scoreTeamA => _isLoaded ? gameState.scoreTeamA : 0;
+  int get scoreTeamB => _isLoaded ? gameState.scoreTeamB : 0;
+  String get currentPhase => _isLoaded ? gameState.getCurrentPhaseDisplay() : GameTexts.phaseSetup;
+  bool get isPaused => _isLoaded ? gameState.isPaused : false;
+  Duration get gameTime => _isLoaded ? gameState.gameTime : Duration.zero;
+  bool get isLoaded => _isLoaded;
   
-  // Simple widget property (no tap handling)
+  // Simple widget property
   Widget get widget => GameWidget(game: this);
 
   @override
@@ -44,15 +48,17 @@ class HadangGame extends FlameGame with HasCollisionDetection {
     await super.onLoad();
     
     try {
-      // Initialize game state
-      gameState = HadangGameState();
+      print('Starting HadangGame initialization...');
+      
+      // gameState already initialized, just reset it
+      gameState.resetGame();
       
       // Setup camera untuk responsive design
       camera.viewfinder.visibleGameSize = size;
       
       // Create field (lapangan) dengan spesifikasi resmi
       field = HadangField();
-      await add(field);
+      await add(field!);
       
       // Create players sesuai aturan resmi (5 pemain per tim)
       await _createPlayers();
@@ -60,15 +66,21 @@ class HadangGame extends FlameGame with HasCollisionDetection {
       // Setup UI components
       await _setupUI();
       
+      // Mark as loaded
+      _isLoaded = true;
+      
       // Start game
       _startGame();
       
       // Track game start time
       _gameStartTime = DateTime.now();
       
+      print('HadangGame initialization completed successfully');
+      
     } catch (e) {
       print('Error loading game: $e');
-      gameState = HadangGameState();
+      // Ensure basic state even if loading fails
+      _isLoaded = true;
     }
   }
 
@@ -107,13 +119,18 @@ class HadangGame extends FlameGame with HasCollisionDetection {
 
   void _setInitialPositions() {
     try {
-      final fieldCenter = field.fieldRect.center;
+      if (field == null) {
+        print('Field not initialized yet, skipping position setup');
+        return;
+      }
+      
+      final fieldCenter = field!.fieldRect.center;
       
       // Position guards on their lines (Team A)
       // 4 horizontal guards + 1 center guard (sodor)
-      if (field.horizontalLines.length >= 4) {
+      if (field!.horizontalLines.length >= 4) {
         for (int i = 0; i < 4 && i < teamAPlayers.length; i++) {
-          final guardLine = field.horizontalLines[i];
+          final guardLine = field!.horizontalLines[i];
           teamAPlayers[i].setPosition(Vector2(
             guardLine.start.x + (guardLine.end.x - guardLine.start.x) / 2,
             guardLine.start.y,
@@ -128,14 +145,14 @@ class HadangGame extends FlameGame with HasCollisionDetection {
           fieldCenter.dx,
           fieldCenter.dy,
         ));
-        teamAPlayers[4].assignToLine(field.centerLine);
+        teamAPlayers[4].assignToLine(field!.centerLine);
       }
       
       // Position attackers at starting line (Team B)
       for (int i = 0; i < teamBPlayers.length; i++) {
         teamBPlayers[i].setPosition(Vector2(
-          field.fieldRect.left + 50 + (i * 60),
-          field.fieldRect.top - 30,
+          field!.fieldRect.left + 50 + (i * 60),
+          field!.fieldRect.top - 30,
         ));
       }
     } catch (e) {
@@ -164,7 +181,9 @@ class HadangGame extends FlameGame with HasCollisionDetection {
           ),
         ),
       );
-      await add(scoreDisplay);
+      if (scoreDisplay != null) {
+        await add(scoreDisplay!);
+      }
       
       // Time display
       timeDisplay = TextComponent(
@@ -184,7 +203,9 @@ class HadangGame extends FlameGame with HasCollisionDetection {
           ),
         ),
       );
-      await add(timeDisplay);
+      if (timeDisplay != null) {
+        await add(timeDisplay!);
+      }
       
       // Game phase display
       gamePhaseDisplay = TextComponent(
@@ -205,7 +226,7 @@ class HadangGame extends FlameGame with HasCollisionDetection {
           ),
         ),
       );
-      await add(gamePhaseDisplay);
+      await add(gamePhaseDisplay!);
       
       // Game events display
       gameEventsDisplay = TextComponent(
@@ -226,7 +247,9 @@ class HadangGame extends FlameGame with HasCollisionDetection {
           ),
         ),
       );
-      await add(gameEventsDisplay);
+      if (gameEventsDisplay != null) {
+        await add(gameEventsDisplay!);
+      }
       
     } catch (e) {
       print('Error setting up UI: $e');
@@ -455,9 +478,19 @@ class HadangGame extends FlameGame with HasCollisionDetection {
 
   void _updateUI() {
     try {
-      scoreDisplay.text = '${GameTexts.teamRed}: ${gameState.scoreTeamA} - ${GameTexts.teamBlue}: ${gameState.scoreTeamB}';
-      timeDisplay.text = '${GameTexts.timeLabel}: ${gameState.gameTime.toGameTime()}';
-      gamePhaseDisplay.text = '${GameTexts.phaseLabel}: ${gameState.getCurrentPhaseDisplay()}';
+      if (!_isLoaded) return;
+      
+      scoreDisplay?.let((display) {
+        display.text = '${GameTexts.teamRed}: ${gameState.scoreTeamA} - ${GameTexts.teamBlue}: ${gameState.scoreTeamB}';
+      });
+      
+      timeDisplay?.let((display) {
+        display.text = '${GameTexts.timeLabel}: ${gameState.gameTime.toGameTime()}';
+      });
+      
+      gamePhaseDisplay?.let((display) {
+        display.text = '${GameTexts.phaseLabel}: ${gameState.getCurrentPhaseDisplay()}';
+      });
     } catch (e) {
       print('Error updating UI: $e');
     }
@@ -465,13 +498,15 @@ class HadangGame extends FlameGame with HasCollisionDetection {
 
   void _showGameEvent(String event) {
     try {
-      gameEventsDisplay.text = event;
-      
-      // Auto-clear event after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        if (gameEventsDisplay.isMounted) {
-          gameEventsDisplay.text = '';
-        }
+      gameEventsDisplay?.let((display) {
+        display.text = event;
+        
+        // Auto-clear event after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (gameEventsDisplay != null) {
+            display.text = '';
+          }
+        });
       });
     } catch (e) {
       print('Error showing game event: $e');
@@ -545,6 +580,11 @@ class HadangGame extends FlameGame with HasCollisionDetection {
   // Manual player movement (akan dipanggil dari UI)
   void moveClosestAttacker(Offset tapPosition) {
     try {
+      if (!_isLoaded) {
+        print('Game not loaded yet, ignoring tap');
+        return;
+      }
+      
       final tapVector = Vector2(tapPosition.dx, tapPosition.dy);
       
       // Find closest attacker to move
@@ -608,6 +648,15 @@ class HadangGame extends FlameGame with HasCollisionDetection {
     if (canMakeSubstitution(team)) {
       gameState.makeSubstitution(team);
       _showGameEvent('Substitution: Player $playerOut → Player $playerIn');
+    }
+  }
+}
+
+// Extension for null safety
+extension NullSafetyExtension<T> on T? {
+  void let(Function(T) action) {
+    if (this != null) {
+      action(this!);
     }
   }
 }

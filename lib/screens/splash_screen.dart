@@ -118,8 +118,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   void _navigateToNextScreen() {
-    // final isFirstTime = !LocalStorageService.instance.tutorialCompleted;
-       final isFirstTime = true;
+    final isFirstTime = !LocalStorageService.instance.tutorialCompleted;
+      //  final isFirstTime = true;
     
     if (isFirstTime) {
       Navigator.pushReplacement(
