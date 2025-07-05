@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game_permainan_tradisional_simulasi/enchanced/enchanced_game_screen.dart';
+import 'package:game_permainan_tradisional_simulasi/multiplayer/multiplayer_game_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/setting_screen.dart';
+import 'package:game_permainan_tradisional_simulasi/screens/tutorial_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/simple/simple_game_screen.dart';
 import '../utils/game_constants.dart';
 import '../services/local_storage_service.dart';
@@ -35,21 +37,22 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
+      ),
+    );
 
     _animationController.forward();
   }
@@ -101,22 +104,13 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     return Column(
       children: [
         // Header
-        Expanded(
-          flex: 3,
-          child: _buildHeader(),
-        ),
-        
+        Expanded(flex: 3, child: _buildHeader()),
+
         // Menu Buttons
-        Expanded(
-          flex: 4,
-          child: _buildMenuButtons(),
-        ),
-        
+        Expanded(flex: 4, child: _buildMenuButtons()),
+
         // Footer
-        Expanded(
-          flex: 1,
-          child: _buildFooter(),
-        ),
+        Expanded(flex: 1, child: _buildFooter()),
       ],
     );
   }
@@ -148,9 +142,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               color: GameColors.primaryGreen,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Title
           Text(
             GameTexts.appTitle,
@@ -167,9 +161,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Subtitle
           Text(
             GameTexts.appSubtitle,
@@ -196,9 +190,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             color: GameColors.successColor,
             onPressed: _startGame,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
               Expanded(
@@ -209,9 +203,9 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   onPressed: _showStatistics,
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               Expanded(
                 child: _buildMenuButton(
                   icon: Icons.settings,
@@ -222,14 +216,34 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildMenuButton(
             icon: Icons.info_outline,
             label: GameTexts.aboutButton,
             color: GameColors.textSecondary,
             onPressed: _showAbout,
+          ),
+          const SizedBox(height: 16),
+          _buildMenuButton(
+            icon: Icons.info_outline,
+            label: "Tutorial",
+            color: Colors.yellow.shade700,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => TutorialScreen(
+                        isFirstTime: true,
+                        onCompleted: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -253,10 +267,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         icon: Icon(icon, size: 24),
         label: Text(
           label,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
@@ -299,10 +310,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   }
 
   void _startGame() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const EnhancedGameScreen()),
-    );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(builder: (context) => const MultiplayerGameScreen()),
+    // );
   }
 
   void _showStatistics() {
@@ -315,7 +326,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void _showSettings() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) =>  SettingsScreen()),
+      MaterialPageRoute(builder: (context) => SettingsScreen()),
     );
   }
 
