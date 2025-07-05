@@ -7,33 +7,34 @@ class GameConstants {
   static const Duration halfDuration = Duration(minutes: 15);
   static const Duration halfTimeDuration = Duration(minutes: 5);
   static const Duration noMovementTimeout = Duration(minutes: 2);
-  
+  static const Duration switchEffectDuration = Duration(milliseconds: 400);
+
   // FIELD SPECIFICATIONS (Aturan resmi: 15m x 9m)
-  static const double fieldRealWidth = 15.0;   // meter
-  static const double fieldRealHeight = 9.0;   // meter
-  static const double lineWidth = 0.05;        // 5 cm
-  static const int sectionsCount = 6;          // 6 petak
-  static const double sectionRealWidth = 4.5;  // meter
+  static const double fieldRealWidth = 15.0; // meter
+  static const double fieldRealHeight = 9.0; // meter
+  static const double lineWidth = 0.05; // 5 cm
+  static const int sectionsCount = 6; // 6 petak
+  static const double sectionRealWidth = 4.5; // meter
   static const double sectionRealHeight = 5.0; // meter
-  
+
   // TEAM CONFIGURATION
-  static const int playersPerTeam = 5;         // 5 pemain aktif
+  static const int playersPerTeam = 5; // 5 pemain aktif
   static const int substitutePlayersPerTeam = 3; // 3 cadangan
-  static const int maxSubstitutionsPerTeam = 3;  // Max 3 pergantian
-  static const int totalPlayersPerTeam = 8;    // Total 8 pemain (1-8)
-  
+  static const int maxSubstitutionsPerTeam = 3; // Max 3 pergantian
+  static const int totalPlayersPerTeam = 8; // Total 8 pemain (1-8)
+
   // PLAYER SPECIFICATIONS
   static const double playerRadius = 15.0;
   static const double playerMovementSpeed = 200.0;
   static const double guardLineTolerrance = 20.0;
   static const double touchDetectionRadius = 25.0;
-  
+
   // VISUAL SETTINGS
   static const double fieldPadding = 60.0;
   static const double uiElementSpacing = 16.0;
   static const double buttonHeight = 48.0;
   static const double cardRadius = 12.0;
-  
+
   // ANIMATION SETTINGS
   static const Duration playerMovementDuration = Duration(milliseconds: 300);
   static const Duration scoreEffectDuration = Duration(milliseconds: 500);
@@ -47,14 +48,14 @@ class GameColors {
   static const Color teamBColor = Colors.blue;
   static const Color teamALight = Color(0xFFFFCDD2);
   static const Color teamBLight = Color(0xFFBBDEFB);
-  
+
   // FIELD COLORS
   static const Color fieldBackground = Color(0xFFE8F5E8);
   static const Color fieldAlternate = Color(0xFFF1F8E9);
   static const Color fieldBorder = Colors.white;
   static const Color guardLine = Colors.red;
   static const Color centerLine = Colors.blue;
-  
+
   // UI COLORS
   static const Color primaryGreen = Color(0xFF4CAF50);
   static const Color secondaryGreen = Color(0xFF81C784);
@@ -62,7 +63,7 @@ class GameColors {
   static const Color cardBackground = Colors.white;
   static const Color textPrimary = Color(0xFF2E7D32);
   static const Color textSecondary = Color(0xFF66BB6A);
-  
+
   // STATUS COLORS
   static const Color successColor = Color(0xFF4CAF50);
   static const Color warningColor = Color(0xFFFF9800);
@@ -78,27 +79,27 @@ class GameTexts {
   static const String settingsButton = 'Pengaturan';
   static const String aboutButton = 'Tentang';
   static const String exitButton = 'Keluar';
-  
+
   // GAME TEXTS
   static const String teamRed = 'Tim Merah';
   static const String teamBlue = 'Tim Biru';
   static const String timeLabel = 'Waktu';
   static const String scoreLabel = 'Skor';
   static const String phaseLabel = 'Fase';
-  
+
   // GAME PHASES
   static const String phaseSetup = 'Persiapan';
   static const String phaseFirstHalf = 'Babak 1';
   static const String phaseHalfTime = 'Istirahat';
   static const String phaseSecondHalf = 'Babak 2';
   static const String phaseFinished = 'Selesai';
-  
+
   // CONTROLS
   static const String pauseButton = 'Jeda';
   static const String resumeButton = 'Lanjut';
   static const String restartButton = 'Ulang';
   static const String switchButton = 'Tukar';
-  
+
   // GAME EVENTS
   static const String gameStarted = 'Permainan dimulai!';
   static const String halfTimeReached = 'Waktu istirahat!';
@@ -107,12 +108,14 @@ class GameTexts {
   static const String teamSwitched = 'Tim bertukar posisi!';
   static const String playerTouched = 'Pemain tersentuh!';
   static const String scoreAwarded = 'Poin diraih!';
-  
+
   // RULES TEXTS
   static const String ruleGuardStayOnLine = 'Penjaga harus tetap di garis';
-  static const String ruleAttackerNoSideline = 'Penyerang tidak boleh keluar garis samping';
+  static const String ruleAttackerNoSideline =
+      'Penyerang tidak boleh keluar garis samping';
   static const String ruleForwardMovement = 'Penyerang harus bergerak maju';
-  static const String ruleTouchWithOpenHand = 'Sentuh dengan telapak tangan terbuka';
+  static const String ruleTouchWithOpenHand =
+      'Sentuh dengan telapak tangan terbuka';
   static const String rule2MinuteTimeout = 'Batas waktu 2 menit tanpa gerakan';
 }
 
@@ -125,7 +128,7 @@ class GameSounds {
   static const String soundHalfTime = 'audio/half_time.mp3';
   static const String soundGameEnd = 'audio/game_end.mp3';
   static const String soundTeamSwitch = 'audio/team_switch.mp3';
-  
+
   // BACKGROUND MUSIC
   static const String musicGameplay = 'audio/gameplay_music.mp3';
   static const String musicMenu = 'audio/menu_music.mp3';
@@ -172,7 +175,7 @@ class GameSettings {
   static const String defaultDifficulty = 'normal';
   static const bool showMovementTrails = true;
   static const bool showRuleHints = true;
-  
+
   // PERFORMANCE SETTINGS
   static const int targetFPS = 60;
   static const bool enableParticleEffects = true;
@@ -189,7 +192,7 @@ class GameAnalytics {
   static const String eventTeamSwitched = 'team_switched';
   static const String eventDifficultyChanged = 'difficulty_changed';
   static const String eventSettingsChanged = 'settings_changed';
-  
+
   // ANALYTICS PARAMETERS
   static const String paramGameDuration = 'game_duration';
   static const String paramFinalScore = 'final_score';
@@ -207,7 +210,7 @@ class GameAchievements {
   static const String strategist = 'strategist';
   static const String marathon = 'marathon';
   static const String culturalAmbassador = 'cultural_ambassador';
-  
+
   // ACHIEVEMENT DATA
   static const Map<String, Map<String, dynamic>> achievements = {
     firstWin: {
@@ -268,10 +271,12 @@ extension ColorExtension on Color {
   Color lighten([double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(this);
-    final hslLight = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    final hslLight = hsl.withLightness(
+      (hsl.lightness + amount).clamp(0.0, 1.0),
+    );
     return hslLight.toColor();
   }
-  
+
   Color darken([double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(this);

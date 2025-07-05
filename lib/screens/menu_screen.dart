@@ -1,6 +1,7 @@
 // File: lib/screens/menu_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:game_permainan_tradisional_simulasi/enchanced/enchanced_game_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/setting_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/simple/simple_game_screen.dart';
 import '../utils/game_constants.dart';
@@ -300,7 +301,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
   void _startGame() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SimpleGameScreen()),
+      MaterialPageRoute(builder: (context) => const EnhancedGameScreen()),
     );
   }
 
