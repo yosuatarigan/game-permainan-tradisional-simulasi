@@ -242,345 +242,323 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
   }
 
- Widget _buildFieldLayoutPage() {
-  return _buildTutorialPage(
-    title: 'Layout Lapangan',
-    content: Column(
-      children: [
-        // Container wrapper untuk memberi ruang pada label
-        SizedBox(
-          height: 370, // Tambah ruang untuk label depan-belakang
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Stack(
-                    children: [
-                      // Field background
-                      Container(
-                        width: 300,
-                        height: 300,
-                        color: Colors.green[100],
-                      ),
-                      
-                      // 6 kotak field sections (3x2 grid) - tanpa nomor
-                      ...List.generate(6, (index) {
-                        int col = index % 3; // 0, 1, 2
-                        int row = index ~/ 3; // 0, 1
-                        
-                        return Positioned(
-                          left: col * 100.0,
-                          top: row * 150.0,
-                          width: 100.0,
-                          height: 150.0,
+  Widget _buildFieldLayoutPage() {
+    return _buildTutorialPage(
+      title: 'Layout Lapangan',
+      content: Column(
+        children: [
+          // Container wrapper untuk memberi ruang pada label
+          SizedBox(
+            height: 370, // Tambah ruang untuk label depan-belakang
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        // Field background
+                        Container(
+                          width: 300,
+                          height: 300,
+                          color: Colors.green[100],
+                        ),
+
+                        // 6 kotak field sections (3x2 grid) - tanpa nomor
+                        ...List.generate(6, (index) {
+                          int col = index % 3; // 0, 1, 2
+                          int row = index ~/ 3; // 0, 1
+
+                          return Positioned(
+                            left: col * 100.0,
+                            top: row * 150.0,
+                            width: 100.0,
+                            height: 150.0,
+                            child: Container(color: Colors.green[100]),
+                          );
+                        }),
+
+                        // Garis horizontal atas
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          right: 0,
+                          child: Container(height: 6, color: Colors.black),
+                        ),
+
+                        // Garis horizontal bawah
+                        Positioned(
+                          left: 0,
+                          bottom: 0,
+                          right: 0,
+                          child: Container(height: 6, color: Colors.black),
+                        ),
+
+                        // 4 Garis vertikal
+                        // Garis vertikal kiri
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(width: 6, color: Colors.black),
+                        ),
+
+                        // Garis vertikal tengah kiri
+                        Positioned(
+                          left: 97,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(width: 6, color: Colors.black),
+                        ),
+
+                        // Garis vertikal tengah kanan
+                        Positioned(
+                          left: 197,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(width: 6, color: Colors.black),
+                        ),
+
+                        // Garis vertikal kanan
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(width: 6, color: Colors.black),
+                        ),
+
+                        // Garis kuning horizontal di tengah (Sodor)
+                        Positioned(
+                          left: 0,
+                          top: 147,
+                          right: 0,
                           child: Container(
-                            color: Colors.green[100],
-                          ),
-                        );
-                      }),
-                      
-                      // Garis horizontal atas
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          height: 6,
-                          color: Colors.black,
-                        ),
-                      ),
-                      
-                      // Garis horizontal bawah
-                      Positioned(
-                        left: 0,
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          height: 6,
-                          color: Colors.black,
-                        ),
-                      ),
-                      
-                      // 4 Garis vertikal
-                      // Garis vertikal kiri
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 6,
-                          color: Colors.black,
-                        ),
-                      ),
-                      
-                      // Garis vertikal tengah kiri
-                      Positioned(
-                        left: 97,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 6,
-                          color: Colors.black,
-                        ),
-                      ),
-                      
-                      // Garis vertikal tengah kanan
-                      Positioned(
-                        left: 197,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 6,
-                          color: Colors.black,
-                        ),
-                      ),
-                      
-                      // Garis vertikal kanan
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 6,
-                          color: Colors.black,
-                        ),
-                      ),
-                      
-                      // Garis kuning horizontal di tengah (Sodor)
-                      Positioned(
-                        left: 0,
-                        top: 147,
-                        right: 0,
-                        child: Container(
-                          height: 6,
-                          color: Colors.yellow[700],
-                        ),
-                      ),
-                      
-                      // Label Sodor
-                      Positioned(
-                        left: 20,
-                        top: 125,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
+                            height: 6,
                             color: Colors.yellow[700],
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
-                          child: const Text(
-                            'GARIS SODOR',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
+                        ),
+
+                        // Label Sodor
+                        Positioned(
+                          left: 20,
+                          top: 125,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.yellow[700],
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'GARIS SODOR',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              
-              // Label DEPAN (Bagian Atas)
-              Positioned(
-                top: 0,
-                left: 50,
-                right: 50,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[600],
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.sports_handball,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'AREA DEPAN (START)',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+
+                // Label DEPAN (Bagian Atas)
+                Positioned(
+                  top: 0,
+                  left: 50,
+                  right: 50,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[600],
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Label BELAKANG (Bagian Bawah)
-              Positioned(
-                bottom: 0,
-                left: 50,
-                right: 50,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.red[600],
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.flag,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'AREA BELAKANG (TUJUAN)',
-                        style: TextStyle(
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.sports_handball,
                           color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                          size: 16,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        const Text(
+                          'AREA DEPAN (START)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 24),
-        
-        const Text(
-          'Lapangan berukuran 15m x 9m dibagi menjadi 6 petak',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: GameColors.textPrimary,
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Legend dengan design yang lebih menarik
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildLegendItem(Colors.black, 'Garis Pembatas Lapangan'),
-              const SizedBox(height: 8),
-              _buildLegendItem(Colors.yellow[700]!, 'Garis Sodor (Tengah)'),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.blue.withOpacity(0.3),
-              width: 1,
+
+                // Label BELAKANG (Bagian Bawah)
+                Positioned(
+                  bottom: 0,
+                  left: 50,
+                  right: 50,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red[600],
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.flag, color: Colors.white, size: 16),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'AREA BELAKANG (TUJUAN)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.blue[700],
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Penyerang bergerak melalui kotak-kotak untuk mencapai sisi seberang',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.blue[700],
-                    fontWeight: FontWeight.w500,
+
+          const SizedBox(height: 24),
+
+          const Text(
+            'Lapangan berukuran 15m x 9m dibagi menjadi 6 petak',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: GameColors.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Legend dengan design yang lebih menarik
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildLegendItem(Colors.black, 'Garis Pembatas Lapangan'),
+                const SizedBox(height: 8),
+                _buildLegendItem(Colors.yellow[700]!, 'Garis Sodor (Tengah)'),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Penyerang bergerak melalui kotak-kotak untuk mencapai sisi seberang',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 4,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: GameColors.textSecondary,
           ),
         ),
       ],
-    ),
-  );
-}
-
-Widget _buildLegendItem(Color color, String text) {
-  return Row(
-    children: [
-      Container(
-        width: 20,
-        height: 4,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      const SizedBox(width: 12),
-      Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: GameColors.textSecondary,
-        ),
-      ),
-    ],
-  );
-}
+    );
+  }
 
   Widget _buildPlayerRolesPage() {
     return _buildTutorialPage(
