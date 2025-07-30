@@ -1,119 +1,107 @@
-// File: lib/game/multiplayer_hadang_game.dart (2-Player Real Game)
+// File: lib/multiplayer/improved_multiplayer_hadang_game.dart
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/game_state.dart';
 import '../utils/game_constants.dart';
 
-class MultiplayerHadangGame extends FlameGame with HasCollisionDetection {
-  // Game State
-  final HadangGameState gameState = HadangGameState();
-  
-  // Field components
-  late RectangleComponent fieldBackground;
-  final List<RectangleComponent> fieldSections = [];
-  final List<RectangleComponent> guardLines = [];
-  
-  // Players - 2 tim dengan role yang jelas
-  final List<CircleComponent> redTeamPlayers = []; // Player 1 - Tim Merah
-  final List<CircleComponent> blueTeamPlayers = []; // Player 2 - Tim Biru
-  
-  // Game mechanics - simple dan fun
-  bool redTeamIsGuarding = true; // Red start as guards, Blue as attackers
+class ImprovedMultiplayerHadangGame extends FlameGame
+    with HasCollisionDetection {
+  // Game dimensions dan layout
   late Vector2 fieldPosition;
   late Vector2 fieldSize;
-  
-  // Player selection untuk controls
-  CircleComponent? selectedPlayer;
-  Color selectionColor = Colors.yellow;
-  
-  // Game data
+  late double sectionWidth;
+  late double sectionHeight;
+
+  // Field components dengan layout yang benar
+  late RectangleComponent fieldBackground;
+  final List<RectangleComponent> fieldSections = [];
+  late RectangleComponent sodorLine;
+
+  // Players - 3 vs 3 untuk active gameplay
+  final List<PlayerComponent> teamRed = []; // Player 1
+  final List<PlayerComponent> teamBlue = []; // Player 2
+
+  // Game state - ACTIVE MODE (no turn-based)
   int redScore = 0;
   int blueScore = 0;
-  int round = 1;
+  int currentRound = 1;
   bool gameActive = true;
-  
+  bool gamePaused = false;
+
+  // Player controls
+  PlayerComponent? selectedRedPlayer;
+  PlayerComponent? selectedBluePlayer;
+
   // UI Components
-  late TextComponent scoreDisplay;
-  late TextComponent roundDisplay;
-  late TextComponent instructionDisplay;
-  
-  // Public getters untuk UI
+  late TextComponent scoreText;
+  late TextComponent statusText;
+  late TextComponent instructionText;
+
+  // Public getters
   int get scoreTeamRed => redScore;
   int get scoreTeamBlue => blueScore;
-  int get currentRound => round;
-  bool get isGameActive => gameActive;
-  String get currentAttacker => redTeamIsGuarding ? 'BIRU' : 'MERAH';
-  String get currentGuard => redTeamIsGuarding ? 'MERAH' : 'BIRU';
-  
   Widget get widget => GameWidget(game: this);
 
   @override
   Future<void> onLoad() async {
-    print('MultiplayerHadangGame: Creating 2-player game...');
-    
+    print('🎮 Loading Multiplayer Hadang Game...');
+
     try {
       // Setup camera
       camera.viewfinder.visibleGameSize = size;
-      
-      // Create playable field
-      await _createPlayableField();
-      
-      // Create 2 teams
-      await _createTwoTeams();
-      
-      // Setup starting positions
-      _setupGamePositions();
-      
-      // Create UI
+
+      // Create proper hadang field layout
+      await _createProperHadangField();
+
+      // Create teams (3v3 optimal)
+      await _createOptimalTeams();
+
+      // Position players immediately for ACTIVE gameplay
+      _setupActiveGameplay();
+
+      // Setup game UI
       await _setupGameUI();
-      
-      print('MultiplayerHadangGame: Ready for 2 players!');
-      
+
+      // Add debug info
+      await _addDebugInfo();
+
+      print('✅ Hadang game ready!');
+      print('🔍 Field: ${fieldSize.x.toInt()}x${fieldSize.y.toInt()}');
+      print('👥 Players: ${teamRed.length} red, ${teamBlue.length} blue');
     } catch (e) {
-      print('Error creating multiplayer game: $e');
+      print('❌ Error creating game: $e');
     }
   }
 
-  Future<void> _createPlayableField() async {
-    // Calculate field size untuk mobile screen
-    final gameSize = size;
-    final padding = 60.0;
-    
+  Future<void> _createProperHadangField() async {
+    // Calculate optimal field size
+    final gameWidth = size.x;
+    final gameHeight = size.y;
+
     fieldSize = Vector2(
-      gameSize.x - (padding * 2),
-      (gameSize.y - 200) * 0.7, // Leave space for UI
+      gameWidth * 0.8, // 80% of screen width
+      gameHeight * 0.5, // 50% of screen height
     );
-    
+
     fieldPosition = Vector2(
-      (gameSize.x - fieldSize.x) / 2,
-      80 + padding,
+      (gameWidth - fieldSize.x) / 2,
+      gameHeight * 0.25, // Position di tengah vertikal
     );
-    
-    // Main field background
+
+    // Calculate section dimensions (3x2 grid)
+    sectionWidth = fieldSize.x / 3;
+    sectionHeight = fieldSize.y / 2;
+
+    // Create main field background
     fieldBackground = RectangleComponent(
       size: fieldSize,
       position: fieldPosition,
-      paint: Paint()..color = GameColors.fieldBackground,
+      paint: Paint()..color = Colors.green[100]!,
     );
     await add(fieldBackground);
-    
-    // Create field border
-    final border = RectangleComponent(
-      size: fieldSize,
-      position: fieldPosition,
-      paint: Paint()
-        ..color = GameColors.fieldBorder
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.0,
-    );
-    await add(border);
-    
-    // Create sections (6 petak)
-    final sectionWidth = fieldSize.x / 3;
-    final sectionHeight = fieldSize.y / 2;
-    
+
+    // Create 6 sections (3 kolom x 2 baris)
     for (int row = 0; row < 2; row++) {
       for (int col = 0; col < 3; col++) {
         final section = RectangleComponent(
@@ -122,427 +110,599 @@ class MultiplayerHadangGame extends FlameGame with HasCollisionDetection {
             fieldPosition.x + (col * sectionWidth),
             fieldPosition.y + (row * sectionHeight),
           ),
-          paint: Paint()
-            ..color = (row + col) % 2 == 0 
-                ? GameColors.fieldAlternate 
-                : GameColors.fieldBackground
-            ..style = PaintingStyle.fill,
+          paint: Paint()..color = Colors.green[50]!,
         );
-        
-        final sectionBorder = RectangleComponent(
-          size: Vector2(sectionWidth, sectionHeight),
-          position: Vector2(
-            fieldPosition.x + (col * sectionWidth),
-            fieldPosition.y + (row * sectionHeight),
-          ),
-          paint: Paint()
-            ..color = Colors.white.withOpacity(0.3)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.0,
-        );
-        
         fieldSections.add(section);
         await add(section);
-        await add(sectionBorder);
       }
     }
-    
-    // Create guard lines (4 horizontal + 1 center vertical)
-    // 4 horizontal lines
-    for (int i = 1; i <= 4; i++) {
-      final lineY = fieldPosition.y + (i * sectionHeight / 2);
-      final guardLine = RectangleComponent(
-        size: Vector2(fieldSize.x, 3),
-        position: Vector2(fieldPosition.x, lineY - 1.5),
-        paint: Paint()..color = GameColors.guardLine,
-      );
-      guardLines.add(guardLine);
-      await add(guardLine);
-    }
-    
-    // 1 center vertical line (sodor)
-    final centerLine = RectangleComponent(
-      size: Vector2(3, fieldSize.y),
-      position: Vector2(fieldPosition.x + (fieldSize.x / 2) - 1.5, fieldPosition.y),
-      paint: Paint()..color = GameColors.centerLine,
-    );
-    guardLines.add(centerLine);
-    await add(centerLine);
-    
-    print('Playable field created: ${fieldSize.x.toInt()}x${fieldSize.y.toInt()}');
-  }
 
-  Future<void> _createTwoTeams() async {
-    // Team Merah (Red) - 5 players
-    redTeamPlayers.clear();
-    for (int i = 0; i < 5; i++) {
-      final player = CircleComponent(
-        radius: 18,
-        paint: Paint()..color = GameColors.teamAColor,
+    // Create boundary lines (4 tepi + 2 pembagi vertikal)
+    // Top boundary
+    await add(
+      RectangleComponent(
+        size: Vector2(fieldSize.x, 4),
+        position: fieldPosition,
+        paint: Paint()..color = Colors.black,
+      ),
+    );
+
+    // Bottom boundary
+    await add(
+      RectangleComponent(
+        size: Vector2(fieldSize.x, 4),
+        position: Vector2(fieldPosition.x, fieldPosition.y + fieldSize.y - 4),
+        paint: Paint()..color = Colors.black,
+      ),
+    );
+
+    // Left boundary
+    await add(
+      RectangleComponent(
+        size: Vector2(4, fieldSize.y),
+        position: fieldPosition,
+        paint: Paint()..color = Colors.black,
+      ),
+    );
+
+    // Right boundary
+    await add(
+      RectangleComponent(
+        size: Vector2(4, fieldSize.y),
+        position: Vector2(fieldPosition.x + fieldSize.x - 4, fieldPosition.y),
+        paint: Paint()..color = Colors.black,
+      ),
+    );
+
+    // Vertical dividers (2 garis pembagi kolom)
+    for (int col = 1; col <= 2; col++) {
+      await add(
+        RectangleComponent(
+          size: Vector2(4, fieldSize.y),
+          position: Vector2(
+            fieldPosition.x + (col * sectionWidth) - 2,
+            fieldPosition.y,
+          ),
+          paint: Paint()..color = Colors.black,
+        ),
       );
-      
-      // Add player outline untuk visibility
-      final outline = CircleComponent(
-        radius: 20,
-        paint: Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
-      );
-      player.add(outline);
-      
-      // Add player number
-      final numberText = TextComponent(
-        text: '${i + 1}',
+    }
+
+    // GARIS SODOR - satu-satunya garis horizontal di dalam lapangan
+    sodorLine = RectangleComponent(
+      size: Vector2(fieldSize.x, 6),
+      position: Vector2(
+        fieldPosition.x,
+        fieldPosition.y + (fieldSize.y / 2) - 3,
+      ),
+      paint: Paint()..color = Colors.yellow[700]!,
+    );
+    await add(sodorLine);
+
+    // Add sodor label
+    await add(
+      TextComponent(
+        text: 'GARIS SODOR',
+        position: Vector2(
+          fieldPosition.x + 20,
+          fieldPosition.y + (fieldSize.y / 2) - 25,
+        ),
         textRenderer: TextPaint(
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
+            color: Colors.orange,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
         ),
-        anchor: Anchor.center,
-      );
-      player.add(numberText);
-      
-      redTeamPlayers.add(player);
-      await add(player);
-    }
-    
-    // Team Biru (Blue) - 5 players  
-    blueTeamPlayers.clear();
-    for (int i = 0; i < 5; i++) {
-      final player = CircleComponent(
-        radius: 18,
-        paint: Paint()..color = GameColors.teamBColor,
-      );
-      
-      // Add player outline
-      final outline = CircleComponent(
-        radius: 20,
-        paint: Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
-      );
-      player.add(outline);
-      
-      // Add player number
-      final numberText = TextComponent(
-        text: '${i + 1}',
-        textRenderer: TextPaint(
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        anchor: Anchor.center,
-      );
-      player.add(numberText);
-      
-      blueTeamPlayers.add(player);
-      await add(player);
-    }
-    
-    print('Two teams created: 5 Red + 5 Blue players');
-  }
-
-  void _setupGamePositions() {
-    if (redTeamIsGuarding) {
-      // Red team as guards (4 horizontal + 1 sodor)
-      _positionGuards(redTeamPlayers);
-      _positionAttackers(blueTeamPlayers);
-    } else {
-      // Blue team as guards
-      _positionGuards(blueTeamPlayers);
-      _positionAttackers(redTeamPlayers);
-    }
-  }
-
-  void _positionGuards(List<CircleComponent> guards) {
-    final sectionHeight = fieldSize.y / 2;
-    
-    // Position 4 horizontal guards
-    for (int i = 0; i < 4; i++) {
-      final lineY = fieldPosition.y + ((i + 1) * sectionHeight / 2);
-      guards[i].position = Vector2(
-        fieldPosition.x + (fieldSize.x / 2),
-        lineY,
-      );
-    }
-    
-    // Position 1 sodor guard (center)
-    guards[4].position = Vector2(
-      fieldPosition.x + (fieldSize.x / 2),
-      fieldPosition.y + (fieldSize.y / 2),
+      ),
     );
+
+    print('Proper Hadang field created');
   }
 
-  void _positionAttackers(List<CircleComponent> attackers) {
-    // Position attackers at start line
-    final startY = fieldPosition.y - 40;
-    final spacing = (fieldSize.x - 80) / 4;
-    
-    for (int i = 0; i < 5; i++) {
-      attackers[i].position = Vector2(
-        fieldPosition.x + 40 + (i * spacing),
-        startY,
+  Future<void> _createOptimalTeams() async {
+    // Create Team Red (Player 1) - 3 players
+    teamRed.clear();
+    for (int i = 0; i < 3; i++) {
+      final player = PlayerComponent(
+        teamColor: Colors.red[600]!,
+        playerNumber: i + 1,
+        isRed: true,
       );
+      teamRed.add(player);
+      await add(player);
     }
+
+    // Create Team Blue (Player 2) - 3 players
+    teamBlue.clear();
+    for (int i = 0; i < 3; i++) {
+      final player = PlayerComponent(
+        teamColor: Colors.blue[600]!,
+        playerNumber: i + 1,
+        isRed: false,
+      );
+      teamBlue.add(player);
+      await add(player);
+    }
+
+    print('Teams created: 3v3 optimal setup');
   }
 
   Future<void> _setupGameUI() async {
     // Score display
-    scoreDisplay = TextComponent(
-      text: 'MERAH: 0  vs  BIRU: 0',
-      position: Vector2(size.x / 2, 30),
+    scoreText = TextComponent(
+      text: 'PLAYER 1: 0  vs  PLAYER 2: 0',
+      position: Vector2(size.x / 2, 40),
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
       ),
       anchor: Anchor.center,
     );
-    await add(scoreDisplay);
-    
-    // Round display
-    roundDisplay = TextComponent(
-      text: 'ROUND 1',
-      position: Vector2(size.x / 2, 55),
+    await add(scoreText);
+
+    // Status display
+    statusText = TextComponent(
+      text: 'ROUND 1 - MERAH JAGA',
+      position: Vector2(size.x / 2, 65),
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.yellow,
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
       ),
       anchor: Anchor.center,
     );
-    await add(roundDisplay);
-    
+    await add(statusText);
+
     // Instruction display
-    instructionDisplay = TextComponent(
-      text: 'TIM BIRU MENYERANG - TAP PEMAIN UNTUK PINDAH',
+    instructionText = TextComponent(
+      text: 'TAP PEMAIN → TAP TUJUAN → HINDARI PENJAGA',
       position: Vector2(size.x / 2, fieldPosition.y + fieldSize.y + 30),
       textRenderer: TextPaint(
         style: const TextStyle(
           color: Colors.lightGreen,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
       ),
       anchor: Anchor.center,
     );
-    await add(instructionDisplay);
+    await add(instructionText);
+  }
+
+  Future<void> _addDebugInfo() async {
+    // Add debug text to show game status
+    await add(
+      TextComponent(
+        text: 'DEBUG: Players loaded successfully',
+        position: Vector2(10, 10),
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Colors.yellow,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _setupActiveGameplay() {
+    print('🎯 Setting up ACTIVE gameplay - both teams play simultaneously');
+
+    // Red team starts at top (targeting bottom)
+    for (int i = 0; i < teamRed.length; i++) {
+      teamRed[i].position = Vector2(
+        fieldPosition.x + 60 + (i * (fieldSize.x - 120) / (teamRed.length - 1)),
+        fieldPosition.y - 60, // Above field
+      );
+      teamRed[i].setAsGuard(false); // All players are attackers in active mode
+      teamRed[i].resetProgress();
+      print(
+        '🔴 Red player ${i + 1} positioned at ${teamRed[i].position.x.toInt()}, ${teamRed[i].position.y.toInt()}',
+      );
+    }
+
+    // Blue team starts at bottom (targeting top)
+    for (int i = 0; i < teamBlue.length; i++) {
+      teamBlue[i].position = Vector2(
+        fieldPosition.x +
+            60 +
+            (i * (fieldSize.x - 120) / (teamBlue.length - 1)),
+        fieldPosition.y + fieldSize.y + 60, // Below field
+      );
+      teamBlue[i].setAsGuard(false); // All players are attackers in active mode
+      teamBlue[i].resetProgress();
+      print(
+        '🔵 Blue player ${i + 1} positioned at ${teamBlue[i].position.x.toInt()}, ${teamBlue[i].position.y.toInt()}',
+      );
+    }
+
+    // Clear selections
+    _clearAllSelections();
+
+    print('✅ Active gameplay setup complete');
+  }
+
+  void _positionGuards(List<PlayerComponent> guards) {
+    // Guard positions: 2 horizontal guards + 1 sodor guard
+
+    // Top horizontal guard
+    guards[0].position = Vector2(
+      fieldPosition.x + (fieldSize.x / 2),
+      fieldPosition.y + 20,
+    );
+    guards[0].setAsGuard(true);
+    guards[0].assignGuardLine('horizontal_top');
+
+    // Bottom horizontal guard
+    guards[1].position = Vector2(
+      fieldPosition.x + (fieldSize.x / 2),
+      fieldPosition.y + fieldSize.y - 20,
+    );
+    guards[1].setAsGuard(true);
+    guards[1].assignGuardLine('horizontal_bottom');
+
+    // Sodor guard (center vertical)
+    guards[2].position = Vector2(
+      fieldPosition.x + (fieldSize.x / 2),
+      fieldPosition.y + (fieldSize.y / 2),
+    );
+    guards[2].setAsGuard(true);
+    guards[2].assignGuardLine('sodor_vertical');
+  }
+
+  void _positionAttackers(List<PlayerComponent> attackers) {
+    // Position attackers at start area (above field)
+    final startY = fieldPosition.y - 40;
+    final spacing = fieldSize.x / 4;
+
+    for (int i = 0; i < attackers.length; i++) {
+      attackers[i].position = Vector2(
+        fieldPosition.x + spacing + (i * spacing),
+        startY,
+      );
+      attackers[i].setAsGuard(false);
+      attackers[i].resetProgress();
+    }
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    
-    if (gameActive) {
-      _checkCollisions();
-      _checkScoring();
-      _updateUI();
+
+    if (gameActive && !gamePaused) {
+      _checkActiveCollisions();
+      _checkActiveScoring();
+      _updateGameUI();
     }
   }
 
-  void _checkCollisions() {
-    final attackers = redTeamIsGuarding ? blueTeamPlayers : redTeamPlayers;
-    final guards = redTeamIsGuarding ? redTeamPlayers : blueTeamPlayers;
-    
-    for (final attacker in attackers) {
-      for (final guard in guards) {
-        final distance = attacker.position.distanceTo(guard.position);
-        
-        if (distance < 40) { // Collision detected
-          _handleTouch(guard, attacker);
+  void _checkActiveCollisions() {
+    // Check collisions between red and blue players
+    for (final redPlayer in teamRed) {
+      for (final bluePlayer in teamBlue) {
+        if (redPlayer.position.distanceTo(bluePlayer.position) < 45) {
+          _handleActiveCollision(redPlayer, bluePlayer);
           return;
         }
       }
     }
   }
 
-  void _handleTouch(CircleComponent guard, CircleComponent attacker) {
+  void _handleActiveCollision(
+    PlayerComponent redPlayer,
+    PlayerComponent bluePlayer,
+  ) {
     if (GameSettings.hapticEnabled) {
       HapticFeedback.mediumImpact();
     }
-    
-    // Switch teams
-    redTeamIsGuarding = !redTeamIsGuarding;
-    round++;
-    
-    // Reset positions
-    _setupGamePositions();
-    
-    // Clear selection
-    selectedPlayer = null;
-    
-    print('TOUCH! Teams switched - Round $round');
+
+    print('💥 COLLISION! Red vs Blue players');
+
+    // Reset both players to their starting positions
+    redPlayer.position = Vector2(fieldPosition.x + 60, fieldPosition.y - 60);
+    redPlayer.resetProgress();
+
+    bluePlayer.position = Vector2(
+      fieldPosition.x + 60,
+      fieldPosition.y + fieldSize.y + 60,
+    );
+    bluePlayer.resetProgress();
+
+    // Clear selections
+    _clearAllSelections();
   }
 
-  void _checkScoring() {
-    final attackers = redTeamIsGuarding ? blueTeamPlayers : redTeamPlayers;
-    final finishLine = fieldPosition.y + fieldSize.y + 20;
-    
-    for (final attacker in attackers) {
-      if (attacker.position.y >= finishLine) {
-        _awardScore();
+  void _checkActiveScoring() {
+    // Check red team scoring (reaching bottom)
+    for (final redPlayer in teamRed) {
+      if (redPlayer.position.y >= fieldPosition.y + fieldSize.y + 40) {
+        _awardActiveScore(true, redPlayer);
+        return;
+      }
+    }
+
+    // Check blue team scoring (reaching top)
+    for (final bluePlayer in teamBlue) {
+      if (bluePlayer.position.y <= fieldPosition.y - 40) {
+        _awardActiveScore(false, bluePlayer);
         return;
       }
     }
   }
 
-  void _awardScore() {
+  void _awardActiveScore(bool redScored, PlayerComponent scorer) {
     if (GameSettings.hapticEnabled) {
       HapticFeedback.lightImpact();
     }
-    
-    if (redTeamIsGuarding) {
-      blueScore++; // Blue scored
-      print('SCORE! Blue team scored');
+
+    if (redScored) {
+      redScore++;
+      print('🔴 RED SCORES! Total: $redScore');
+      // Reset the scorer to start
+      scorer.position = Vector2(fieldPosition.x + 60, fieldPosition.y - 60);
     } else {
-      redScore++; // Red scored  
-      print('SCORE! Red team scored');
+      blueScore++;
+      print('🔵 BLUE SCORES! Total: $blueScore');
+      // Reset the scorer to start
+      scorer.position = Vector2(
+        fieldPosition.x + 60,
+        fieldPosition.y + fieldSize.y + 60,
+      );
     }
-    
-    // Switch teams after scoring
-    redTeamIsGuarding = !redTeamIsGuarding;
-    round++;
-    
-    // Reset positions
-    _setupGamePositions();
-    
-    // Clear selection
-    selectedPlayer = null;
+
+    scorer.resetProgress();
+    _clearAllSelections();
   }
 
-  void _updateUI() {
-    scoreDisplay.text = 'MERAH: $redScore  vs  BIRU: $blueScore';
-    roundDisplay.text = 'ROUND $round';
-    
-    final attackingTeam = redTeamIsGuarding ? 'BIRU' : 'MERAH';
-    instructionDisplay.text = 'TIM $attackingTeam MENYERANG - TAP PEMAIN UNTUK PINDAH';
+  void _updateGameUI() {
+    scoreText.text = 'PLAYER 1: $redScore  vs  PLAYER 2: $blueScore';
+    statusText.text = 'ROUND $currentRound - ACTIVE GAMEPLAY';
+    instructionText.text = 'KEDUA TIM BERMAIN BERSAMAAN - CAPAI SISI SEBERANG!';
   }
 
-  // Tap handling untuk 2-player controls
+  // Touch handling untuk 2-player controls - ACTIVE MODE
   void handlePlayerTap(Offset tapPosition) {
+    if (!gameActive || gamePaused) return;
+
     final tapVector = Vector2(tapPosition.dx, tapPosition.dy);
-    final attackers = redTeamIsGuarding ? blueTeamPlayers : redTeamPlayers;
-    
-    // First, check if tapping on an attacker to select
-    for (final attacker in attackers) {
-      final distance = attacker.position.distanceTo(tapVector);
-      
-      if (distance < 30) {
-        // Select this player
-        _selectPlayer(attacker);
+    final isLeftSide = tapPosition.dx < size.x / 2;
+
+    if (isLeftSide) {
+      // Player 1 control (Red team)
+      _handlePlayer1Control(tapVector);
+    } else {
+      // Player 2 control (Blue team)
+      _handlePlayer2Control(tapVector);
+    }
+  }
+
+  void _handlePlayer1Control(Vector2 tapPosition) {
+    // Check if tapping on red player
+    for (final player in teamRed) {
+      if (player.position.distanceTo(tapPosition) < 35) {
+        _selectPlayer(player, true);
         return;
       }
     }
-    
-    // If we have a selected player, move them
-    if (selectedPlayer != null) {
-      _moveSelectedPlayer(tapVector);
+
+    // Move selected red player
+    if (selectedRedPlayer != null) {
+      _movePlayer(selectedRedPlayer!, tapPosition);
     }
   }
 
-  void _selectPlayer(CircleComponent player) {
-    // Clear previous selection
-    if (selectedPlayer != null) {
-      _clearPlayerSelection(selectedPlayer!);
-    }
-    
-    // Select new player
-    selectedPlayer = player;
-    _highlightSelectedPlayer(player);
-    
-    print('Player selected for movement');
-  }
-
-  void _highlightSelectedPlayer(CircleComponent player) {
-    // Add selection highlight
-    final highlight = CircleComponent(
-      radius: 25,
-      paint: Paint()
-        ..color = selectionColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.0,
-    );
-    player.add(highlight);
-  }
-
-  void _clearPlayerSelection(CircleComponent player) {
-    // Remove highlight (simple approach: remove last child if it's highlight)
-    if (player.children.isNotEmpty) {
-      final lastChild = player.children.last;
-      if (lastChild is CircleComponent) {
-        player.remove(lastChild);
+  void _handlePlayer2Control(Vector2 tapPosition) {
+    // Check if tapping on blue player
+    for (final player in teamBlue) {
+      if (player.position.distanceTo(tapPosition) < 35) {
+        _selectPlayer(player, false);
+        return;
       }
     }
-  }
 
-  void _moveSelectedPlayer(Vector2 newPosition) {
-    if (selectedPlayer == null) return;
-    
-    // Validate move (basic validation)
-    if (_isValidMove(selectedPlayer!, newPosition)) {
-      selectedPlayer!.position = newPosition;
-      print('Player moved to ${newPosition.x.toInt()}, ${newPosition.y.toInt()}');
+    // Move selected blue player
+    if (selectedBluePlayer != null) {
+      _movePlayer(selectedBluePlayer!, tapPosition);
     }
   }
 
-  bool _isValidMove(CircleComponent player, Vector2 newPosition) {
-    // Basic boundary check
-    if (newPosition.x < fieldPosition.x || 
-        newPosition.x > fieldPosition.x + fieldSize.x ||
-        newPosition.y < fieldPosition.y - 60 ||
-        newPosition.y > fieldPosition.y + fieldSize.y + 60) {
-      return false;
+  void _selectPlayer(PlayerComponent player, bool isRedPlayer) {
+    if (isRedPlayer) {
+      selectedRedPlayer?.clearSelection();
+      selectedRedPlayer = player;
+    } else {
+      selectedBluePlayer?.clearSelection();
+      selectedBluePlayer = player;
     }
-    
-    return true;
+
+    player.showSelection();
+    print(
+      'Player selected: ${player.isRed ? 'Red' : 'Blue'} #${player.playerNumber}',
+    );
   }
 
-  // Public control methods
+  void _movePlayer(PlayerComponent player, Vector2 newPosition) {
+    // Basic boundary check - allow movement in expanded area
+    if (newPosition.x >= 20 &&
+        newPosition.x <= size.x - 20 &&
+        newPosition.y >= 20 &&
+        newPosition.y <= size.y - 20) {
+      player.moveTo(newPosition);
+      print(
+        '${player.isRed ? 'Red' : 'Blue'} player moved to ${newPosition.x.toInt()}, ${newPosition.y.toInt()}',
+      );
+    }
+  }
+
+  // Public control methods - ACTIVE MODE
   void restartGame() {
     redScore = 0;
     blueScore = 0;
-    round = 1;
-    redTeamIsGuarding = true;
+    currentRound = 1;
     gameActive = true;
-    selectedPlayer = null;
-    
-    _setupGamePositions();
-    
-    print('Game restarted - Red guards, Blue attacks');
+    gamePaused = false;
+
+    _setupActiveGameplay();
+    print('🔄 Game restarted - Active mode');
   }
 
   void pauseGame() {
-    gameActive = !gameActive;
-    print('Game ${gameActive ? 'resumed' : 'paused'}');
+    gamePaused = !gamePaused;
+    print('⏸️ Game ${gamePaused ? 'paused' : 'resumed'}');
   }
 
   void switchTeams() {
-    redTeamIsGuarding = !redTeamIsGuarding;
-    round++;
-    _setupGamePositions();
-    selectedPlayer = null;
-    
-    print('Manual team switch - Round $round');
+    // In active mode, just reset positions
+    _setupActiveGameplay();
+    currentRound++;
+    print('🔄 Teams reset - Round $currentRound');
+  }
+
+  void _clearAllSelections() {
+    selectedRedPlayer?.clearSelection();
+    selectedBluePlayer?.clearSelection();
+    selectedRedPlayer = null;
+    selectedBluePlayer = null;
   }
 
   Map<String, dynamic> getGameStats() {
     return {
       'redScore': redScore,
       'blueScore': blueScore,
-      'round': round,
-      'attackingTeam': redTeamIsGuarding ? 'Blue' : 'Red',
-      'guardingTeam': redTeamIsGuarding ? 'Red' : 'Blue',
+      'round': currentRound,
+      'attackingTeam': 'Both', // Both teams attack in active mode
+      'guardingTeam': 'None', // No guards in active mode
       'isActive': gameActive,
+      'isPaused': gamePaused,
     };
+  }
+}
+
+// Player Component untuk ACTIVE gameplay - simplified
+class PlayerComponent extends CircleComponent {
+  final Color teamColor;
+  final int playerNumber;
+  final bool isRed;
+
+  bool _isSelected = false;
+  bool _hasScored = false;
+
+  PlayerComponent({
+    required this.teamColor,
+    required this.playerNumber,
+    required this.isRed,
+  }) : super(radius: 18, paint: Paint()..color = teamColor);
+
+  @override
+  Future<void> onLoad() async {
+    // Add white outline for visibility
+    add(
+      CircleComponent(
+        radius: 20,
+        paint:
+            Paint()
+              ..color = Colors.white
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2,
+      ),
+    );
+
+    // Add player number
+    add(
+      TextComponent(
+        text: '$playerNumber',
+        textRenderer: TextPaint(
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        anchor: Anchor.center,
+      ),
+    );
+
+    print('✅ Player ${isRed ? 'Red' : 'Blue'} #$playerNumber loaded');
+  }
+
+  // Simplified methods for active gameplay
+  void setAsGuard(bool guard) {
+    // In active mode, no guards - all players are active
+  }
+
+  void assignGuardLine(String lineType) {
+    // Not used in active mode
+  }
+
+  void updateGuardMovement(Vector2 fieldPos, Vector2 fieldSize) {
+    // Not used in active mode
+  }
+
+  bool checkCollision(PlayerComponent other) {
+    return position.distanceTo(other.position) < 40;
+  }
+
+  bool isInField(Vector2 fieldPos, Vector2 fieldSize) {
+    return position.x >= fieldPos.x - 50 &&
+        position.x <= fieldPos.x + fieldSize.x + 50 &&
+        position.y >= fieldPos.y - 50 &&
+        position.y <= fieldPos.y + fieldSize.y + 50;
+  }
+
+  bool checkScoring(Vector2 fieldPos, Vector2 fieldSize) {
+    // Simplified scoring for active mode
+    if (isRed) {
+      // Red team scores by reaching bottom
+      return position.y >= fieldPos.y + fieldSize.y + 30;
+    } else {
+      // Blue team scores by reaching top
+      return position.y <= fieldPos.y - 30;
+    }
+  }
+
+  void resetProgress() {
+    _hasScored = false;
+  }
+
+  bool canMoveTo(Vector2 newPos, Vector2 fieldPos, Vector2 fieldSize) {
+    // Allow free movement in active mode
+    return true;
+  }
+
+  void moveTo(Vector2 newPosition) {
+    position = newPosition;
+  }
+
+  void showSelection() {
+    if (!_isSelected) {
+      _isSelected = true;
+      add(
+        CircleComponent(
+          radius: 25,
+          paint:
+              Paint()
+                ..color = Colors.yellow
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 3,
+        ),
+      );
+    }
+  }
+
+  void clearSelection() {
+    if (_isSelected) {
+      _isSelected = false;
+      // Remove selection highlight (last child)
+      if (children.isNotEmpty) {
+        children.last.removeFromParent();
+      }
+    }
   }
 }
