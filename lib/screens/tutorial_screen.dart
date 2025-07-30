@@ -9,11 +9,7 @@ class TutorialScreen extends StatefulWidget {
   final bool isFirstTime;
   final VoidCallback? onCompleted;
 
-  const TutorialScreen({
-    super.key,
-    this.isFirstTime = false,
-    this.onCompleted,
-  });
+  const TutorialScreen({super.key, this.isFirstTime = false, this.onCompleted});
 
   @override
   State<TutorialScreen> createState() => _TutorialScreenState();
@@ -23,7 +19,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages = 7;
-  
+
   final _storage = LocalStorageService.instance;
   final _audio = AudioService.instance;
 
@@ -70,7 +66,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   child: LinearProgressIndicator(
                     value: (_currentPage + 1) / _totalPages,
                     backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(GameColors.primaryGreen),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      GameColors.primaryGreen,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -84,7 +82,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
               ],
             ),
           ),
-          
+
           // Tutorial content
           Expanded(
             child: PageView(
@@ -104,7 +102,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
               ],
             ),
           ),
-          
+
           // Navigation buttons
           Container(
             padding: const EdgeInsets.all(16),
@@ -122,11 +120,20 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   )
                 else
                   const SizedBox(),
-                
+
                 ElevatedButton.icon(
-                  onPressed: _currentPage == _totalPages - 1 ? _completeTutorial : _nextPage,
-                  icon: Icon(_currentPage == _totalPages - 1 ? Icons.check : Icons.arrow_forward),
-                  label: Text(_currentPage == _totalPages - 1 ? 'Selesai' : 'Selanjutnya'),
+                  onPressed:
+                      _currentPage == _totalPages - 1
+                          ? _completeTutorial
+                          : _nextPage,
+                  icon: Icon(
+                    _currentPage == _totalPages - 1
+                        ? Icons.check
+                        : Icons.arrow_forward,
+                  ),
+                  label: Text(
+                    _currentPage == _totalPages - 1 ? 'Selesai' : 'Selanjutnya',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GameColors.primaryGreen,
                   ),
@@ -157,9 +164,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
               color: Colors.white,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           const Text(
             'Hadang (Gobag Sodor)',
             style: TextStyle(
@@ -168,9 +175,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
               color: GameColors.textPrimary,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Text(
             'Permainan tradisional Indonesia yang membutuhkan kecepatan, strategi, dan kerja sama tim.',
             textAlign: TextAlign.center,
@@ -180,9 +187,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
               height: 1.4,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -214,17 +221,17 @@ class _TutorialScreenState extends State<TutorialScreen> {
             'Tujuan Utama',
             'Raih poin dengan cara melewati lapangan dari garis start hingga finish tanpa tersentuh penjaga.',
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildObjectiveCard(
             '🏆',
             'Cara Menang',
             'Tim dengan poin terbanyak setelah 2 x 15 menit menjadi pemenang.',
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildObjectiveCard(
             '🔄',
             'Pergantian Tim',
@@ -235,57 +242,345 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
   }
 
-  Widget _buildFieldLayoutPage() {
-    return _buildTutorialPage(
-      title: 'Layout Lapangan',
-      content: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: GameColors.fieldBackground,
-              border: Border.all(color: Colors.white, width: 3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Stack(
-              children: [
-                // Field sections
-                _buildFieldSection(0, 0, '1'),
-                _buildFieldSection(1, 0, '2'),
-                _buildFieldSection(2, 0, '3'),
-                _buildFieldSection(0, 1, '4'),
-                _buildFieldSection(1, 1, '5'),
-                _buildFieldSection(2, 1, '6'),
-                
-                // Guard lines
-                _buildHorizontalLine(0.33),
-                _buildHorizontalLine(0.67),
-                _buildVerticalLine(0.5),
-              ],
+ Widget _buildFieldLayoutPage() {
+  return _buildTutorialPage(
+    title: 'Layout Lapangan',
+    content: Column(
+      children: [
+        // Container wrapper untuk memberi ruang pada label
+        SizedBox(
+          height: 370, // Tambah ruang untuk label depan-belakang
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      // Field background
+                      Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.green[100],
+                      ),
+                      
+                      // 6 kotak field sections (3x2 grid) - tanpa nomor
+                      ...List.generate(6, (index) {
+                        int col = index % 3; // 0, 1, 2
+                        int row = index ~/ 3; // 0, 1
+                        
+                        return Positioned(
+                          left: col * 100.0,
+                          top: row * 150.0,
+                          width: 100.0,
+                          height: 150.0,
+                          child: Container(
+                            color: Colors.green[100],
+                          ),
+                        );
+                      }),
+                      
+                      // Garis horizontal atas
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          height: 6,
+                          color: Colors.black,
+                        ),
+                      ),
+                      
+                      // Garis horizontal bawah
+                      Positioned(
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          height: 6,
+                          color: Colors.black,
+                        ),
+                      ),
+                      
+                      // 4 Garis vertikal
+                      // Garis vertikal kiri
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 6,
+                          color: Colors.black,
+                        ),
+                      ),
+                      
+                      // Garis vertikal tengah kiri
+                      Positioned(
+                        left: 97,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 6,
+                          color: Colors.black,
+                        ),
+                      ),
+                      
+                      // Garis vertikal tengah kanan
+                      Positioned(
+                        left: 197,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 6,
+                          color: Colors.black,
+                        ),
+                      ),
+                      
+                      // Garis vertikal kanan
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 6,
+                          color: Colors.black,
+                        ),
+                      ),
+                      
+                      // Garis kuning horizontal di tengah (Sodor)
+                      Positioned(
+                        left: 0,
+                        top: 147,
+                        right: 0,
+                        child: Container(
+                          height: 6,
+                          color: Colors.yellow[700],
+                        ),
+                      ),
+                      
+                      // Label Sodor
+                      Positioned(
+                        left: 20,
+                        top: 125,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.yellow[700],
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'GARIS SODOR',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Label DEPAN (Bagian Atas)
+              Positioned(
+                top: 0,
+                left: 50,
+                right: 50,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[600],
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.sports_handball,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'AREA DEPAN (START)',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Label BELAKANG (Bagian Bawah)
+              Positioned(
+                bottom: 0,
+                left: 50,
+                right: 50,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red[600],
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.flag,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'AREA BELAKANG (TUJUAN)',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 24),
+        
+        const Text(
+          'Lapangan berukuran 15m x 9m dibagi menjadi 6 petak',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: GameColors.textPrimary,
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Legend dengan design yang lebih menarik
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              _buildLegendItem(Colors.black, 'Garis Pembatas Lapangan'),
+              const SizedBox(height: 8),
+              _buildLegendItem(Colors.yellow[700]!, 'Garis Sodor (Tengah)'),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.withOpacity(0.3),
+              width: 1,
             ),
           ),
-          
-          const SizedBox(height: 20),
-          
-          const Text(
-            'Lapangan berukuran 15m x 9m dibagi menjadi 6 petak',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: GameColors.textPrimary,
-            ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.blue[700],
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Penyerang bergerak melalui kotak-kotak untuk mencapai sisi seberang',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.blue[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-          
-          const SizedBox(height: 12),
-          
-          _buildLegendItem(Colors.red, 'Garis Penjaga Horizontal (4 penjaga)'),
-          _buildLegendItem(Colors.blue, 'Garis Penjaga Tengah/Sodor (1 penjaga)'),
-        ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildLegendItem(Color color, String text) {
+  return Row(
+    children: [
+      Container(
+        width: 20,
+        height: 4,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
       ),
-    );
-  }
+      const SizedBox(width: 12),
+      Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: GameColors.textSecondary,
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildPlayerRolesPage() {
     return _buildTutorialPage(
@@ -294,22 +589,22 @@ class _TutorialScreenState extends State<TutorialScreen> {
         children: [
           _buildRoleCard(
             '🛡️',
-            'Penjaga (5 pemain)',
-            'Bertugas menghalangi penyerang dengan cara menyentuh mereka. Penjaga harus tetap berada di garis yang ditentukan.',
+            'Penjaga',
+            '• Penjaga bertugas menghalangi penyerang\n• Penjaga harus tetap berada di area/garis yang ditentukan\n• Bertugas menyentuh penyerang yang melewati wilayahnya',
             GameColors.teamAColor,
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           _buildRoleCard(
             '🏃',
-            'Penyerang (5 pemain)',
-            'Berusaha melewati lapangan dari start hingga finish tanpa tersentuh penjaga. Harus bergerak maju dan tidak boleh keluar garis samping.',
+            'Penyerang',
+            'Berusaha melewati lapangan dari satu sisi ke sisi lain melalui kotak-kotak tanpa tersentuh penjaga. Harus bergerak maju dan tidak boleh keluar batas lapangan.',
             GameColors.teamBColor,
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -345,12 +640,22 @@ class _TutorialScreenState extends State<TutorialScreen> {
       content: Column(
         children: [
           _buildRuleItem('✋', 'Sentuhan harus dengan telapak tangan terbuka'),
-          _buildRuleItem('📍', 'Penjaga harus tetap dengan kedua kaki di garis'),
+          _buildRuleItem(
+            '📍',
+            'Penjaga harus tetap dengan kedua kaki di garis',
+          ),
           _buildRuleItem('🚫', 'Penyerang tidak boleh keluar garis samping'),
-          _buildRuleItem('⬆️', 'Penyerang harus bergerak maju (tidak boleh mundur)'),
-          _buildRuleItem('⏱️', 'Batas waktu 2 menit tanpa gerakan = tukar tim'),
+          _buildRuleItem(
+            '⬆️',
+            'Penyerang harus bergerak maju (tidak boleh mundur)',
+          ),
+          _buildRuleItem('⏱️', 'Batas waktu 1 menit tanpa gerakan = tukar tim'),
           _buildRuleItem('🔄', 'Maksimal 3 pergantian pemain per tim'),
           _buildRuleItem('⏳', 'Durasi: 2 x 15 menit + istirahat 5 menit'),
+          _buildRuleItem(
+            '❌',
+            'Penjaga tidak sah menyentuh pemain yang sudah melewatinya',
+          ),
         ],
       ),
     );
@@ -366,25 +671,25 @@ class _TutorialScreenState extends State<TutorialScreen> {
             'Pilih Pemain',
             'Tap pada pemain penyerang untuk memilihnya',
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildControlItem(
             Icons.my_location,
             'Gerakkan Pemain',
             'Tap pada area tujuan untuk menggerakkan pemain yang dipilih',
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildControlItem(
             Icons.visibility,
             'Amati Penjaga',
             'Perhatikan pergerakan penjaga dan cari celah untuk melewati',
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildControlItem(
             Icons.speed,
             'Strategi',
@@ -405,7 +710,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
             decoration: BoxDecoration(
               color: GameColors.successColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: GameColors.successColor.withOpacity(0.3)),
+              border: Border.all(
+                color: GameColors.successColor.withOpacity(0.3),
+              ),
             ),
             child: Column(
               children: [
@@ -414,9 +721,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   size: 48,
                   color: GameColors.successColor,
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 const Text(
                   '1 POIN',
                   style: TextStyle(
@@ -425,30 +732,30 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     color: GameColors.successColor,
                   ),
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 Text(
-                  'Untuk setiap crossing berhasil\n(start → finish atau finish → start)',
+                  'Untuk setiap crossing berhasil\n(dari satu sisi ke sisi lain)',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
-          _buildScoringRule('📍', 'Pemain harus mencapai garis finish'),
-          _buildScoringRule('🔄', 'Bisa kembali ke start untuk poin tambahan'),
+
+          _buildScoringRule('📍', 'Pemain harus mencapai sisi seberang'),
+          _buildScoringRule(
+            '🔄',
+            'Bisa kembali ke sisi awal untuk poin tambahan',
+          ),
           _buildScoringRule('👥', 'Semua anggota tim bisa mencetak poin'),
           _buildScoringRule('🏆', 'Tim dengan poin terbanyak menang'),
-          
+
           const SizedBox(height: 20),
-          
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -484,14 +791,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
               color: GameColors.textPrimary,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
-          Expanded(
-            child: SingleChildScrollView(
-              child: content,
-            ),
-          ),
+
+          Expanded(child: SingleChildScrollView(child: content)),
         ],
       ),
     );
@@ -521,15 +824,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
               borderRadius: BorderRadius.circular(25),
             ),
             child: Center(
-              child: Text(
-                emoji,
-                style: const TextStyle(fontSize: 24),
-              ),
+              child: Text(emoji, style: const TextStyle(fontSize: 24)),
             ),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,9 +842,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     color: GameColors.textPrimary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 4),
-                
+
                 Text(
                   description,
                   style: TextStyle(
@@ -561,79 +861,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
   }
 
-  Widget _buildFieldSection(int x, int y, String number) {
-    final width = 1.0 / 3;
-    final height = 1.0 / 2;
-    
-    return Positioned(
-      left: x * width * 300,
-      top: y * height * 200,
-      width: width * 300,
-      height: height * 200,
-      child: Container(
-        decoration: BoxDecoration(
-          color: (x + y) % 2 == 0 ? GameColors.fieldBackground : GameColors.fieldAlternate,
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
-        ),
-        child: Center(
-          child: Text(
-            number,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHorizontalLine(double position) {
-    return Positioned(
-      left: 0,
-      top: position * 200,
-      right: 0,
-      child: Container(
-        height: 3,
-        color: Colors.red,
-      ),
-    );
-  }
-
-  Widget _buildVerticalLine(double position) {
-    return Positioned(
-      left: position * 300,
-      top: 0,
-      bottom: 0,
-      child: Container(
-        width: 3,
-        color: Colors.blue,
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 20,
-            height: 3,
-            color: color,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 12, color: GameColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoleCard(String emoji, String title, String description, Color color) {
+  Widget _buildRoleCard(
+    String emoji,
+    String title,
+    String description,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -642,6 +875,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(emoji, style: const TextStyle(fontSize: 32)),
           const SizedBox(width: 16),
@@ -718,9 +952,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ),
             child: Icon(icon, color: Colors.white, size: 24),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,9 +967,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     color: GameColors.textPrimary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 4),
-                
+
                 Text(
                   description,
                   style: TextStyle(
@@ -759,12 +993,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
         children: [
           Text(emoji, style: const TextStyle(fontSize: 18)),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              rule,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(rule, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );
@@ -793,7 +1022,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
   void _completeTutorial() {
     _storage.tutorialCompleted = true;
     _audio.playSuccessSound();
-    
+
     if (widget.onCompleted != null) {
       widget.onCompleted!();
     } else {
