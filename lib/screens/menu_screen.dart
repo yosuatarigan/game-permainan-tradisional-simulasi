@@ -1,7 +1,6 @@
 // File: lib/screens/menu_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:game_permainan_tradisional_simulasi/multiplayer/multiplayer_game_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/setting_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/tutorial_screen.dart';
 import '../utils/game_constants.dart';
@@ -35,7 +34,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -57,7 +56,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
         curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
       ),
     );
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -166,7 +165,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                       Positioned(
                         bottom: 25,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.orange,
                             borderRadius: BorderRadius.circular(10),
@@ -192,9 +194,10 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
 
           // Enhanced Title
           ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [Colors.white, Colors.yellow.shade200],
-            ).createShader(bounds),
+            shaderCallback:
+                (bounds) => LinearGradient(
+                  colors: [Colors.white, Colors.yellow.shade200],
+                ).createShader(bounds),
             child: Text(
               GameTexts.appTitle,
               style: TextStyle(
@@ -354,10 +357,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon, 
-                  size: isMainButton ? 28 : 24,
-                ),
+                Icon(icon, size: isMainButton ? 28 : 24),
                 const SizedBox(width: 8),
                 Text(
                   label,
@@ -440,41 +440,19 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _startGame() {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => 
-            const ImprovedMultiplayerGameScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.ease;
-
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
-  }
+  void _startGame() {}
 
   void _showTutorial() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TutorialScreen(
-          isFirstTime: true,
-          onCompleted: () {
-            Navigator.pop(context);
-          },
-        ),
+        builder:
+            (context) => TutorialScreen(
+              isFirstTime: true,
+              onCompleted: () {
+                Navigator.pop(context);
+              },
+            ),
       ),
     );
   }
