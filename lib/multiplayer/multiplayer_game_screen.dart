@@ -9,20 +9,18 @@ class ImprovedMultiplayerGameScreen extends StatefulWidget {
   const ImprovedMultiplayerGameScreen({super.key});
 
   @override
-  State<ImprovedMultiplayerGameScreen> createState() =>
-      _ImprovedMultiplayerGameScreenState();
+  State<ImprovedMultiplayerGameScreen> createState() => _ImprovedMultiplayerGameScreenState();
 }
 
-class _ImprovedMultiplayerGameScreenState
-    extends State<ImprovedMultiplayerGameScreen>
+class _ImprovedMultiplayerGameScreenState extends State<ImprovedMultiplayerGameScreen> 
     with TickerProviderStateMixin {
   late ImprovedMultiplayerHadangGame game;
   late AnimationController _scoreAnimationController;
   late AnimationController _pulseAnimationController;
-
+  
   Map<String, dynamic> gameStats = {};
   bool isPaused = false;
-
+  
   // Game timer
   int gameTimeSeconds = 0;
   bool timerRunning = false;
@@ -50,7 +48,7 @@ class _ImprovedMultiplayerGameScreenState
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
+    
     _pulseAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -59,10 +57,14 @@ class _ImprovedMultiplayerGameScreenState
 
   void _startStatsUpdater() {
     Stream.periodic(const Duration(milliseconds: 300)).listen((_) {
-      if (mounted) {
-        setState(() {
-          gameStats = game.getGameStats();
-        });
+      if (mounted && game != null) {
+        try {
+          setState(() {
+            gameStats = game!.getGameStats();
+          });
+        } catch (e) {
+          print('Error updating stats: $e');
+        }
       }
     });
   }
@@ -107,11 +109,7 @@ class _ImprovedMultiplayerGameScreenState
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.sports_handball,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                const Icon(Icons.sports_handball, color: Colors.white, size: 20),
                 const SizedBox(width: 6),
                 const Text(
                   'HADANG',
@@ -208,12 +206,12 @@ class _ImprovedMultiplayerGameScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildInfoChip(
-                'ROUND',
-                '${game.currentRound}',
-                Colors.purple,
-                Icons.loop,
-              ),
+              // _buildInfoChip(
+              //   'ROUND',
+              //   '${game. }',
+              //   Colors.purple,
+              //   Icons.loop,
+              // ),
               _buildInfoChip(
                 'TIME',
                 _formatTime(gameTimeSeconds),
@@ -228,9 +226,9 @@ class _ImprovedMultiplayerGameScreenState
               ),
             ],
           ),
-
+          
           const SizedBox(height: 16),
-
+          
           // Main score display
           Row(
             children: [
@@ -245,7 +243,7 @@ class _ImprovedMultiplayerGameScreenState
                   true, // Always active in active mode
                 ),
               ),
-
+              
               // VS Separator
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -270,7 +268,7 @@ class _ImprovedMultiplayerGameScreenState
                   ],
                 ),
               ),
-
+              
               // Player 2 Score
               Expanded(
                 child: _buildEnhancedPlayerScore(
@@ -289,12 +287,7 @@ class _ImprovedMultiplayerGameScreenState
     );
   }
 
-  Widget _buildInfoChip(
-    String label,
-    String value,
-    Color color,
-    IconData icon,
-  ) {
+  Widget _buildInfoChip(String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -350,10 +343,9 @@ class _ImprovedMultiplayerGameScreenState
             decoration: BoxDecoration(
               color: isActive ? color.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
-              border:
-                  isActive
-                      ? Border.all(color: color.withOpacity(0.3), width: 2)
-                      : null,
+              border: isActive 
+                  ? Border.all(color: color.withOpacity(0.3), width: 2)
+                  : null,
             ),
             child: Column(
               children: [
@@ -401,14 +393,9 @@ class _ImprovedMultiplayerGameScreenState
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color:
-                        Colors
-                            .green, // Always green for attackers in active mode
+                    color: Colors.green, // Always green for attackers in active mode
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -445,7 +432,12 @@ class _ImprovedMultiplayerGameScreenState
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Stack(children: [_buildGameWidget(), _buildGameOverlays()]),
+          child: Stack(
+            children: [
+              _buildGameWidget(),
+              _buildGameOverlays(),
+            ],
+          ),
         ),
       ),
     );
@@ -482,14 +474,9 @@ class _ImprovedMultiplayerGameScreenState
             animation: _pulseAnimationController,
             builder: (context, child) {
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(
-                    0.8 + _pulseAnimationController.value * 0.2,
-                  ),
+                  color: Colors.green.withOpacity(0.8 + _pulseAnimationController.value * 0.2),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -502,7 +489,11 @@ class _ImprovedMultiplayerGameScreenState
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.sports_handball, color: Colors.white, size: 14),
+                    Icon(
+                      Icons.sports_handball,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'KEDUA TIM AKTIF',
@@ -517,7 +508,7 @@ class _ImprovedMultiplayerGameScreenState
               );
             },
           ),
-
+          
           // Pause indicator
           if (isPaused)
             Container(
@@ -560,7 +551,11 @@ class _ImprovedMultiplayerGameScreenState
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.yellow, size: 16),
+              Icon(
+                Icons.info_outline,
+                color: Colors.yellow,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'KONTROL 2 PEMAIN:',
@@ -573,7 +568,7 @@ class _ImprovedMultiplayerGameScreenState
             ],
           ),
           const SizedBox(height: 8),
-
+          
           Row(
             children: [
               // Player 1 instructions
@@ -604,16 +599,19 @@ class _ImprovedMultiplayerGameScreenState
                       const SizedBox(height: 4),
                       const Text(
                         'TAP sisi KIRI layar untuk kontrol tim MERAH',
-                        style: TextStyle(fontSize: 9, color: Colors.white70),
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.white70,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
               ),
-
+              
               const SizedBox(width: 8),
-
+              
               // VS separator
               Container(
                 padding: const EdgeInsets.all(4),
@@ -630,10 +628,10 @@ class _ImprovedMultiplayerGameScreenState
                   ),
                 ),
               ),
-
+              
               const SizedBox(width: 8),
-
-              // Player 2 instructions
+              
+              // Player 2 instructions  
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -661,7 +659,10 @@ class _ImprovedMultiplayerGameScreenState
                       const SizedBox(height: 4),
                       const Text(
                         'TAP sisi KANAN layar untuk kontrol tim BIRU',
-                        style: TextStyle(fontSize: 9, color: Colors.white70),
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.white70,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -670,13 +671,17 @@ class _ImprovedMultiplayerGameScreenState
               ),
             ],
           ),
-
+          
           const SizedBox(height: 8),
-
+          
           // Game instructions - Updated for active gameplay
           Text(
             '🎯 ACTIVE MODE: Kedua tim bermain bersamaan • Red ke bawah, Blue ke atas • Hindari collision = reset!',
-            style: TextStyle(fontSize: 10, color: Colors.white60, height: 1.2),
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.white60,
+              height: 1.2,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -694,13 +699,13 @@ class _ImprovedMultiplayerGameScreenState
     if (GameSettings.hapticEnabled) {
       HapticFeedback.lightImpact();
     }
-
+    
     try {
       game.pauseGame();
       isPaused = !isPaused;
       timerRunning = !isPaused;
       setState(() {});
-
+      
       _showGameMessage(isPaused ? '⏸️ Game dipause' : '▶️ Game dilanjutkan');
     } catch (e) {
       print('Error toggling pause: $e');
@@ -713,9 +718,7 @@ class _ImprovedMultiplayerGameScreenState
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Restart Game?'),
-          content: const Text(
-            'Apakah Anda yakin ingin memulai ulang permainan?',
-          ),
+          content: const Text('Apakah Anda yakin ingin memulai ulang permainan?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -741,14 +744,14 @@ class _ImprovedMultiplayerGameScreenState
     if (GameSettings.hapticEnabled) {
       HapticFeedback.mediumImpact();
     }
-
+    
     try {
       game.restartGame();
       isPaused = false;
       gameTimeSeconds = 0;
       timerRunning = true;
       setState(() {});
-
+      
       _showGameMessage('🏁 Game dimulai ulang!');
     } catch (e) {
       print('Error restarting game: $e');
@@ -776,9 +779,43 @@ class _ImprovedMultiplayerGameScreenState
         backgroundColor: GameColors.primaryGreen,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         margin: const EdgeInsets.all(16),
       ),
+    );
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Game Error',
+            style: TextStyle(color: Colors.red),
+          ),
+          content: Text(
+            error,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Go back to menu
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Back to Menu'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
