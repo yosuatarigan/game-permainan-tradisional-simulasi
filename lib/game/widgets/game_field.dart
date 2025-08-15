@@ -18,25 +18,59 @@ class GameField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: fieldSize.width,
-      height: fieldSize.height,
-      decoration: const BoxDecoration(
-        color: GameColors.fieldBackground,
-      ),
-      child: CustomPaint(
-        painter: FieldPainter(),
-        child: Stack(
-          children: [
-            // Render all players
-            ...players.map((player) => PlayerWidget(
-              key: ValueKey(player.id),
-              player: player,
-              onTap: () => onPlayerTouch(player),
-            )),
-          ],
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use available space while maintaining aspect ratio
+        final availableWidth = constraints.maxWidth;
+        final availableHeight = constraints.maxHeight;
+        
+        // Maintain 4:3 aspect ratio
+        double width = availableWidth;
+        double height = width * 0.75;
+        
+        if (height > availableHeight) {
+          height = availableHeight;
+          width = height * (4/3);
+        }
+        
+        return Center(
+          child: Container(
+            width: width,
+            height: height,
+            decoration: const BoxDecoration(
+              color: GameColors.fieldBackground,
+            ),
+            child: CustomPaint(
+              painter: FieldPainter(),
+              child: Stack(
+                children: [
+                  // Render all players with scaling
+                  ...players.map((player) {
+                    // Scale player positions to fit actual field size
+                    final scaledPosition = Offset(
+                      (player.position.dx / fieldSize.width) * width,
+                      (player.position.dy / fieldSize.height) * height,
+                    );
+                    
+                    return PlayerWidget(
+                      key: ValueKey(player.id),
+                      player: Player(
+                        id: player.id,
+                        team: player.team,
+                        role: player.role,
+                        position: scaledPosition,
+                        isPlayerControlled: player.isPlayerControlled,
+                        isMoving: player.isMoving,
+                      ),
+                      onTap: () => onPlayerTouch(player),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

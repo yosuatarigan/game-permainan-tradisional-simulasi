@@ -34,7 +34,7 @@ class HadangGameLogic extends ChangeNotifier {
   Duration timeRemaining = const Duration(minutes: 15);
   
   // Field & Players
-  final Size fieldSize = const Size(350, 250);
+  final Size fieldSize = const Size(400, 300); // Increased from 350x250
   final List<Player> players = [];
   
   // Controlled Players
@@ -44,6 +44,9 @@ class HadangGameLogic extends ChangeNotifier {
   // Game Timer
   Timer? _gameTimer;
   Timer? _aiTimer;
+  
+  // Score callback for dialog
+  Function(String team, int newScore)? onScoreCallback;
   
   // Game Settings
   final double playerRadius = 15.0;
@@ -79,24 +82,24 @@ class HadangGameLogic extends ChangeNotifier {
   void _initializePlayers() {
     players.clear();
     
-    // Red Team (Guards) - positioned on horizontal lines
+    // Red Team (Guards) - positioned on horizontal lines (adjusted for bigger field)
     for (int i = 0; i < 5; i++) {
       players.add(Player(
         id: i,
         team: 'red',
         role: 'guard',
-        position: Offset(70 + (i * 60), 125), // Middle horizontal line
+        position: Offset(80 + (i * 60), 150), // Adjusted spacing for bigger field
         isPlayerControlled: i == 0, // First red player is controlled
       ));
     }
     
-    // Blue Team (Attackers) - positioned at bottom
+    // Blue Team (Attackers) - positioned at bottom (adjusted for bigger field)
     for (int i = 0; i < 5; i++) {
       players.add(Player(
         id: i + 5,
         team: 'blue',
         role: 'attacker',
-        position: Offset(70 + (i * 60), 200), // Bottom area
+        position: Offset(80 + (i * 60), 250), // Adjusted for bigger field
         isPlayerControlled: i == 0, // First blue player is controlled
       ));
     }
@@ -166,8 +169,8 @@ class HadangGameLogic extends ChangeNotifier {
           // Attackers move forward very slowly and predictably
           if (random.nextDouble() < aiMoveChance * 0.5) { // Even slower for attackers
             double newY = player.position.dy - 5; // Smaller steps
-            // Don't let attackers move too far up automatically
-            newY = newY.clamp(80.0, fieldSize.height - playerRadius - 10);
+            // Don't let attackers move too far up automatically - adjusted for bigger field
+            newY = newY.clamp(100.0, fieldSize.height - playerRadius - 10);
             player.targetPosition = Offset(player.position.dx, newY);
           }
         }
@@ -235,8 +238,8 @@ class HadangGameLogic extends ChangeNotifier {
         }
       }
       
-      // Check if attacker reached the top (scored)
-      if (attacker.position.dy < 50) {
+      // Check if attacker reached the top (scored) - adjusted for bigger field
+      if (attacker.position.dy < 45) { // Adjusted scoring threshold
         _onScore(attacker.team);
         _resetPlayerPosition(attacker);
       }
@@ -258,27 +261,29 @@ class HadangGameLogic extends ChangeNotifier {
   void _onScore(String team) {
     if (team == 'red') {
       scoreRed++;
+      onScoreCallback?.call('red', scoreRed);
     } else {
       scoreBlue++;
+      onScoreCallback?.call('blue', scoreBlue);
     }
   }
 
   void _resetPlayerPosition(Player player) {
     if (player.role == 'attacker') {
-      player.position = Offset(player.position.dx, fieldSize.height - 50);
+      player.position = Offset(player.position.dx, fieldSize.height - 50); // Adjusted for bigger field
     }
     player.targetPosition = player.position;
   }
 
   void _switchTeamRoles() {
-    // Simple team switch - swap roles
+    // Simple team switch - swap roles (adjusted for bigger field)
     for (final player in players) {
       if (player.role == 'guard') {
         player.role = 'attacker';
-        player.position = Offset(player.position.dx, fieldSize.height - 50);
+        player.position = Offset(player.position.dx, fieldSize.height - 50); // Adjusted
       } else {
         player.role = 'guard';
-        player.position = Offset(player.position.dx, fieldSize.height / 2);
+        player.position = Offset(player.position.dx, fieldSize.height / 2); // Center line
       }
       player.targetPosition = player.position;
     }

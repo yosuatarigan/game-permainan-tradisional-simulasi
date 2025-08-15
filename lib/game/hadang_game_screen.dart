@@ -43,6 +43,182 @@ class _HadangGameScreenState extends State<HadangGameScreen>
     gameLogic.addListener(() {
       if (mounted) setState(() {});
     });
+    
+    // Set score callback to show dialog
+    gameLogic.onScoreCallback = _showScoreDialog;
+  }
+
+  void _showScoreDialog(String team, int newScore) {
+    HapticFeedback.heavyImpact();
+    
+    final teamColor = team == 'red' ? GameColors.teamAColor : GameColors.teamBColor;
+    final teamName = team == 'red' ? 'TIM MERAH' : 'TIM BIRU';
+    final emoji = team == 'red' ? '🔴' : '🔵';
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: TweenAnimationBuilder(
+          duration: const Duration(milliseconds: 600),
+          tween: Tween<double>(begin: 0.0, end: 1.0),
+          builder: (context, double value, child) {
+            return Transform.scale(
+              scale: value,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      teamColor.withOpacity(0.95),
+                      teamColor.withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: teamColor.withOpacity(0.6),
+                      blurRadius: 25,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Animated trophy with team emoji
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.emoji_events,
+                            color: teamColor,
+                            size: 50,
+                          ),
+                          Positioned(
+                            bottom: 15,
+                            child: Text(
+                              emoji,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Celebration text
+                    Text(
+                      '🎉 GOAL! 🎉',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(2, 2),
+                            blurRadius: 4,
+                            color: Colors.black45,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      teamName,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Score: $newScore',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Continue button
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Lanjutkan'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: teamColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        elevation: 8,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      'Auto close in 3 seconds',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.8),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    // Auto dismiss after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   void _onPlayer1Move(Offset direction) {
@@ -148,83 +324,74 @@ class _HadangGameScreenState extends State<HadangGameScreen>
             flex: 1,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  // Player 1 Joystick (Left)
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Player 1',
-                          style: TextStyle(
-                            color: GameColors.teamAColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+            child: Row(
+              children: [
+                // Player 1 Joystick (Left)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Player 1',
+                        style: TextStyle(
+                          color: GameColors.teamAColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12, // Smaller text
                         ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: JoystickWidget(
-                            onMove: _onPlayer1Move,
-                            color: GameColors.teamAColor,
-                            isEnabled: !gameLogic.isPaused,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: JoystickWidget(
+                          onMove: _onPlayer1Move,
+                          color: GameColors.teamAColor,
+                          isEnabled: !gameLogic.isPaused,
+                          size: 90, // Slightly smaller joystick
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
 
-                  // Center Divider
-                  Container(
-                    width: 2,
-                    height: 80,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: GameColors.textSecondary,
-                      borderRadius: BorderRadius.circular(1),
-                    ),
+                // Center Divider
+                Container(
+                  width: 2,
+                  height: 70,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: GameColors.textSecondary,
+                    borderRadius: BorderRadius.circular(1),
                   ),
+                ),
 
-                  // Player 2 Joystick (Right)
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Player 2',
-                          style: TextStyle(
-                            color: GameColors.teamBColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                // Player 2 Joystick (Right)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Player 2',
+                        style: TextStyle(
+                          color: GameColors.teamBColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12, // Smaller text
                         ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: JoystickWidget(
-                            onMove: _onPlayer2Move,
-                            color: GameColors.teamBColor,
-                            isEnabled: !gameLogic.isPaused,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: JoystickWidget(
+                          onMove: _onPlayer2Move,
+                          color: GameColors.teamBColor,
+                          isEnabled: !gameLogic.isPaused,
+                          size: 90, // Slightly smaller joystick
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
-          // Game Status Info
-          Container(
-            padding: const EdgeInsets.all(8),
-            child: Text(
-              gameLogic.gameStatusText,
-              style: TextStyle(
-                fontSize: 12,
-                color: GameColors.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
-            ),
+          // Game Status Info (Compact)
+   
           ),
         ],
       ),
