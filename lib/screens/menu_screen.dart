@@ -279,17 +279,17 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                 ),
               ),
 
-              const SizedBox(width: 16),
+              // const SizedBox(width: 16),
 
-              Expanded(
-                child: _buildEnhancedMenuButton(
-                  icon: Icons.bar_chart,
-                  label: 'Statistik',
-                  subtitle: 'Riwayat Game',
-                  color: GameColors.infoColor,
-                  onPressed: _showStatistics,
-                ),
-              ),
+              // Expanded(
+              //   child: _buildEnhancedMenuButton(
+              //     icon: Icons.bar_chart,
+              //     label: 'Statistik',
+              //     subtitle: 'Riwayat Game',
+              //     color: GameColors.infoColor,
+              //     onPressed: _showStatistics,
+              //   ),
+              // ),
             ],
           ),
 
@@ -298,24 +298,24 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
           // Bottom buttons row
           Row(
             children: [
-              Expanded(
-                child: _buildEnhancedMenuButton(
-                  icon: Icons.settings,
-                  label: GameTexts.settingsButton,
-                  subtitle: 'Pengaturan',
-                  color: GameColors.warningColor,
-                  onPressed: _showSettings,
-                ),
-              ),
+              // Expanded(
+              //   child: _buildEnhancedMenuButton(
+              //     icon: Icons.settings,
+              //     label: GameTexts.settingsButton,
+              //     subtitle: 'Pengaturan',
+              //     color: GameColors.warningColor,
+              //     onPressed: _showSettings,
+              //   ),
+              // ),
 
-              const SizedBox(width: 16),
+              // const SizedBox(width: 16),
 
               Expanded(
                 child: _buildEnhancedMenuButton(
                   icon: Icons.info_outline,
                   label: GameTexts.aboutButton,
                   subtitle: 'Tentang Game',
-                  color: GameColors.textSecondary,
+                  color: GameColors.warningColor,
                   onPressed: _showAbout,
                 ),
               ),
