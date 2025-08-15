@@ -1,5 +1,6 @@
 // File: lib/game/widgets/game_field.dart
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../../utils/game_constants.dart';
 import '../game_logic.dart';
 
@@ -43,23 +44,38 @@ class GameField extends StatelessWidget {
 class FieldPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final fieldPaint = Paint()
       ..color = Colors.white
-      ..strokeWidth = 3.0
+      ..strokeWidth = 4.0
       ..style = PaintingStyle.stroke;
 
     final centerLinePaint = Paint()
       ..color = Colors.yellow.shade700
-      ..strokeWidth = 4.0
+      ..strokeWidth = 5.0
       ..style = PaintingStyle.stroke;
 
-    // Draw field border
+    final boundaryPaint = Paint()
+      ..color = Colors.red.shade700
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke;
+
+    final goalAreaPaint = Paint()
+      ..color = Colors.green.shade600
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke;
+
+    // Draw field background with pattern
+    final backgroundPaint = Paint()
+      ..color = GameColors.fieldBackground;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), backgroundPaint);
+
+    // Draw field border (thick)
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      paint,
+      fieldPaint,
     );
 
-    // Draw 6 sections (3x2 grid)
+    // Draw 6 sections (3x2 grid) with clearer lines
     final sectionWidth = size.width / 3;
     final sectionHeight = size.height / 2;
 
@@ -68,36 +84,131 @@ class FieldPainter extends CustomPainter {
       canvas.drawLine(
         Offset(i * sectionWidth, 0),
         Offset(i * sectionWidth, size.height),
-        paint,
+        fieldPaint,
       );
     }
 
-    // Horizontal center line (Garis Sodor)
+    // Horizontal center line (Garis Sodor) - THICK
     canvas.drawLine(
       Offset(0, size.height / 2),
       Offset(size.width, size.height / 2),
       centerLinePaint,
     );
 
-    // Draw section labels (optional)
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
+    // Draw goal areas (top and bottom)
+    final goalHeight = size.height * 0.15;
+    
+    // Top goal area (where attackers need to reach)
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, goalHeight),
+      goalAreaPaint..style = PaintingStyle.stroke,
+    );
+    
+    // Bottom starting area
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height - goalHeight, size.width, goalHeight),
+      boundaryPaint..style = PaintingStyle.stroke,
     );
 
-    // Add "GARIS SODOR" label
+    // Draw section numbers for clarity
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    
+    // Section labels
+    for (int row = 0; row < 2; row++) {
+      for (int col = 0; col < 3; col++) {
+        final sectionNumber = (row * 3) + col + 1;
+        final centerX = (col * sectionWidth) + (sectionWidth / 2);
+        final centerY = (row * sectionHeight) + (sectionHeight / 2);
+        
+        textPainter.text = TextSpan(
+          text: '$sectionNumber',
+          style: TextStyle(
+            color: Colors.grey.shade400,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(centerX - textPainter.width / 2, centerY - textPainter.height / 2),
+        );
+      }
+    }
+
+    // Draw directional arrows for clarity
+    _drawArrow(canvas, Offset(size.width / 2, size.height - 30), 
+               Offset(size.width / 2, 30), Colors.green, 'TUJUAN');
+    
+    // Add "GARIS SODOR" label with better styling
     textPainter.text = TextSpan(
-      text: 'SODOR',
+      text: 'GARIS SODOR',
       style: TextStyle(
         color: Colors.yellow.shade700,
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(
+            color: Colors.black.withOpacity(0.5),
+            offset: const Offset(1, 1),
+            blurRadius: 2,
+          ),
+        ],
       ),
     );
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(10, size.height / 2 - 20),
+      Offset(10, size.height / 2 - 25),
     );
+
+    // Add goal labels
+    textPainter.text = TextSpan(
+      text: '⚽ AREA TUJUAN',
+      style: TextStyle(
+        color: Colors.green.shade700,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(10, 10));
+
+    textPainter.text = TextSpan(
+      text: '🏁 AREA START',
+      style: TextStyle(
+        color: Colors.red.shade700,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(10, size.height - 25));
+  }
+
+  void _drawArrow(Canvas canvas, Offset start, Offset end, Color color, String label) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke;
+
+    // Draw arrow line
+    canvas.drawLine(start, end, paint);
+
+    // Draw arrowhead
+    final dx = end.dx - start.dx;
+    final dy = end.dy - start.dy;
+    final length = sqrt(dx * dx + dy * dy);
+    final arrowLength = 15.0;
+    final arrowAngle = 0.5;
+
+    final arrowX1 = end.dx - arrowLength * cos(atan2(dy, dx) - arrowAngle);
+    final arrowY1 = end.dy - arrowLength * sin(atan2(dy, dx) - arrowAngle);
+    final arrowX2 = end.dx - arrowLength * cos(atan2(dy, dx) + arrowAngle);
+    final arrowY2 = end.dy - arrowLength * sin(atan2(dy, dx) + arrowAngle);
+
+    canvas.drawLine(end, Offset(arrowX1, arrowY1), paint);
+    canvas.drawLine(end, Offset(arrowX2, arrowY2), paint);
   }
 
   @override
@@ -116,59 +227,74 @@ class PlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAttacker = player.role == 'attacker';
+    final controlColor = player.team == 'red' ? GameColors.teamAColor : GameColors.teamBColor;
+    
     return Positioned(
-      left: player.position.dx - 15, // Center the player
-      top: player.position.dy - 15,
+      left: player.position.dx - 18, // Slightly larger for better visibility
+      top: player.position.dy - 18,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          width: 30,
-          height: 30,
+          duration: const Duration(milliseconds: 200),
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            // Control indicator - thick white border for controlled players
             border: Border.all(
               color: player.isPlayerControlled ? Colors.white : Colors.transparent,
-              width: player.isPlayerControlled ? 2 : 0,
+              width: player.isPlayerControlled ? 3 : 0,
             ),
+            // Role indicator - different shadow for attackers vs guards
             boxShadow: [
               if (player.isMoving)
                 BoxShadow(
-                  color: player.team == 'red' 
-                      ? GameColors.teamAColor.withOpacity(0.5)
-                      : GameColors.teamBColor.withOpacity(0.5),
-                  blurRadius: 8,
+                  color: controlColor.withOpacity(0.6),
+                  blurRadius: player.isPlayerControlled ? 12 : 6,
                   offset: const Offset(0, 2),
                 ),
+              // Role shadow
+              BoxShadow(
+                color: isAttacker ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
             ],
           ),
           child: ClipOval(
             child: Stack(
               children: [
-                // Player image
+                // Player image with role-based background
                 Container(
-                  width: 30,
-                  height: 30,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: player.team == 'red' 
-                        ? GameColors.teamAColor 
-                        : GameColors.teamBColor,
+                    color: controlColor,
                     shape: BoxShape.circle,
+                    // Role-based pattern
+                    border: Border.all(
+                      color: isAttacker ? Colors.green : Colors.red,
+                      width: 1,
+                    ),
                   ),
                   child: Image.asset(
                     player.imagePath,
-                    width: 30,
-                    height: 30,
+                    width: 36,
+                    height: 36,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      // Fallback if image not found
+                      // Enhanced fallback with role colors
                       return Container(
-                        width: 30,
-                        height: 30,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: player.team == 'red' 
-                              ? GameColors.teamAColor 
-                              : GameColors.teamBColor,
+                          gradient: LinearGradient(
+                            colors: [
+                              controlColor,
+                              controlColor.withOpacity(0.8),
+                            ],
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -177,7 +303,7 @@ class PlayerWidget extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -186,16 +312,17 @@ class PlayerWidget extends StatelessWidget {
                   ),
                 ),
                 
-                // Player number overlay
+                // Player number overlay (bottom-right)
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: Container(
-                    width: 12,
-                    height: 12,
+                    width: 14,
+                    height: 14,
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.8),
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1),
                     ),
                     child: Center(
                       child: Text(
@@ -210,20 +337,50 @@ class PlayerWidget extends StatelessWidget {
                   ),
                 ),
 
-                // Role indicator
+                // Control indicator (top-left)
                 if (player.isPlayerControlled)
                   Positioned(
                     top: 0,
                     left: 0,
                     child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
+                        border: Border.all(color: controlColor, width: 1),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.control_camera,
+                          color: controlColor,
+                          size: 8,
+                        ),
                       ),
                     ),
                   ),
+
+                // Role indicator (top-right)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: isAttacker ? Colors.green : Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isAttacker ? Icons.arrow_upward : Icons.block,
+                        color: Colors.white,
+                        size: 6,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

@@ -8,6 +8,9 @@ class GameHUD extends StatelessWidget {
   final Duration timeRemaining;
   final String currentPhase;
   final bool isPaused;
+  final String player1Role;
+  final String player2Role;
+  final String gameObjective;
 
   const GameHUD({
     super.key,
@@ -16,53 +19,123 @@ class GameHUD extends StatelessWidget {
     required this.timeRemaining,
     required this.currentPhase,
     this.isPaused = false,
+    required this.player1Role,
+    required this.player2Role,
+    required this.gameObjective,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Column(
+      children: [
+        // Main Score HUD
+        Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Red Team Score
-          Expanded(
-            child: _buildTeamScore(
-              'TIM MERAH',
-              scoreRed,
-              GameColors.teamAColor,
-              Icons.person,
-            ),
-          ),
+          child: Row(
+            children: [
+              // Red Team Score
+              Expanded(
+                child: _buildTeamScore(
+                  'TIM MERAH',
+                  scoreRed,
+                  GameColors.teamAColor,
+                  Icons.person,
+                ),
+              ),
 
-          // Center Info (Timer & Phase)
-          Expanded(
-            flex: 2,
-            child: _buildCenterInfo(),
-          ),
+              // Center Info (Timer & Phase)
+              Expanded(
+                flex: 2,
+                child: _buildCenterInfo(),
+              ),
 
-          // Blue Team Score
-          Expanded(
-            child: _buildTeamScore(
-              'TIM BIRU',
-              scoreBlue,
-              GameColors.teamBColor,
-              Icons.person,
-            ),
+              // Blue Team Score
+              Expanded(
+                child: _buildTeamScore(
+                  'TIM BIRU',
+                  scoreBlue,
+                  GameColors.teamBColor,
+                  Icons.person,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+
+        // Player Role & Objective Display
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [GameColors.primaryGreen.withOpacity(0.1), Colors.white],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: GameColors.primaryGreen.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              // Player Roles Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPlayerRoleCard('Player 1', player1Role, GameColors.teamAColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPlayerRoleCard('Player 2', player2Role, GameColors.teamBColor),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Game Objective
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: GameColors.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: GameColors.primaryGreen.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.flag,
+                      color: GameColors.primaryGreen,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      gameObjective,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: GameColors.primaryGreen,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -255,5 +328,56 @@ class GameHUD extends StatelessWidget {
     } else {
       return GameColors.successColor;
     }
+  }
+
+  Widget _buildPlayerRoleCard(String playerName, String role, Color color) {
+    final isAttacker = role.toLowerCase() == 'attacker';
+    final roleIcon = isAttacker ? Icons.sports_handball : Icons.security;
+    final roleText = isAttacker ? 'PENYERANG' : 'PENJAGA';
+    final roleDescription = isAttacker ? 'Menuju atas' : 'Halangi lawan';
+    
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(roleIcon, color: color, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                playerName,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            roleText,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          Text(
+            roleDescription,
+            style: TextStyle(
+              fontSize: 9,
+              color: color.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

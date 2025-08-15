@@ -124,20 +124,44 @@ class _JoystickWidgetState extends State<JoystickWidget>
                   shape: BoxShape.circle,
                   color: widget.color.withOpacity(0.1),
                   border: Border.all(
-                    color: widget.color.withOpacity(0.3),
-                    width: 2,
+                    color: widget.color.withOpacity(widget.isEnabled ? 0.4 : 0.2),
+                    width: 3,
                   ),
+                  boxShadow: [
+                    if (_isDragging)
+                      BoxShadow(
+                        color: widget.color.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
                 ),
                 child: Stack(
                   children: [
-                    // Joystick base circles
+                    // Joystick base circles with better visibility
                     Center(
                       child: Container(
                         width: widget.size * 0.8,
                         height: widget.size * 0.8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: widget.color.withOpacity(0.05),
+                          color: widget.color.withOpacity(0.08),
+                          border: Border.all(
+                            color: widget.color.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    // Inner guidance circle
+                    Center(
+                      child: Container(
+                        width: widget.size * 0.5,
+                        height: widget.size * 0.5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.transparent,
                           border: Border.all(
                             color: widget.color.withOpacity(0.2),
                             width: 1,
@@ -146,41 +170,82 @@ class _JoystickWidgetState extends State<JoystickWidget>
                       ),
                     ),
                     
-                    // Directional indicators
-                    _buildDirectionIndicator(0, -widget.size / 3, Icons.keyboard_arrow_up),
-                    _buildDirectionIndicator(0, widget.size / 3, Icons.keyboard_arrow_down),
-                    _buildDirectionIndicator(-widget.size / 3, 0, Icons.keyboard_arrow_left),
-                    _buildDirectionIndicator(widget.size / 3, 0, Icons.keyboard_arrow_right),
+                    // Directional indicators with better feedback
+                    _buildDirectionIndicator(0, -widget.size / 3, Icons.keyboard_arrow_up, 'UP'),
+                    _buildDirectionIndicator(0, widget.size / 3, Icons.keyboard_arrow_down, 'DOWN'),
+                    _buildDirectionIndicator(-widget.size / 3, 0, Icons.keyboard_arrow_left, 'LEFT'),
+                    _buildDirectionIndicator(widget.size / 3, 0, Icons.keyboard_arrow_right, 'RIGHT'),
                     
-                    // Movable knob
+                    // Center dot for reference
+                    Center(
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: widget.color.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    
+                    // Movable knob with enhanced design
                     AnimatedPositioned(
                       duration: _isDragging 
                           ? Duration.zero 
-                          : const Duration(milliseconds: 200),
+                          : const Duration(milliseconds: 300),
                       curve: Curves.elasticOut,
-                      left: (widget.size / 2) + _knobPosition.dx - 15,
-                      top: (widget.size / 2) + _knobPosition.dy - 15,
+                      left: (widget.size / 2) + _knobPosition.dx - 18,
+                      top: (widget.size / 2) + _knobPosition.dy - 18,
                       child: Container(
-                        width: 30,
-                        height: 30,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: widget.color,
+                          gradient: LinearGradient(
+                            colors: [
+                              widget.color,
+                              widget.color.withOpacity(0.8),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: widget.color.withOpacity(0.4),
-                              blurRadius: _isDragging ? 8 : 4,
-                              offset: const Offset(0, 2),
+                              blurRadius: _isDragging ? 12 : 6,
+                              offset:  Offset(0, _isDragging ? 4 : 2),
                             ),
                           ],
                         ),
                         child: Icon(
                           Icons.control_camera,
                           color: Colors.white,
-                          size: 16,
+                          size: 18,
                         ),
                       ),
                     ),
+
+                    // Disabled overlay
+                    if (!widget.isEnabled)
+                      Container(
+                        width: widget.size,
+                        height: widget.size,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey.withOpacity(0.5),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.pause,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -191,26 +256,35 @@ class _JoystickWidgetState extends State<JoystickWidget>
     );
   }
 
-  Widget _buildDirectionIndicator(double dx, double dy, IconData icon) {
-    final opacity = _isDragging && _isInDirection(dx, dy) ? 0.8 : 0.3;
+  Widget _buildDirectionIndicator(double dx, double dy, IconData icon, String direction) {
+    final isActive = _isDragging && _isInDirection(dx, dy);
+    final opacity = isActive ? 0.9 : 0.3;
     
     return Positioned(
-      left: (widget.size / 2) + dx - 10,
-      top: (widget.size / 2) + dy - 10,
+      left: (widget.size / 2) + dx - 12,
+      top: (widget.size / 2) + dy - 12,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
         opacity: opacity,
-        child: Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: widget.color.withOpacity(0.2),
-          ),
-          child: Icon(
-            icon,
-            color: widget.color,
-            size: 14,
+        child: AnimatedScale(
+          scale: isActive ? 1.2 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.color.withOpacity(isActive ? 0.8 : 0.2),
+              border: Border.all(
+                color: widget.color.withOpacity(isActive ? 1.0 : 0.4),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: isActive ? Colors.white : widget.color,
+              size: 16,
+            ),
           ),
         ),
       ),

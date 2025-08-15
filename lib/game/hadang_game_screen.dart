@@ -112,6 +112,9 @@ class _HadangGameScreenState extends State<HadangGameScreen>
             timeRemaining: gameLogic.timeRemaining,
             currentPhase: gameLogic.currentPhase,
             isPaused: gameLogic.isPaused,
+            player1Role: gameLogic.player1Role,
+            player2Role: gameLogic.player2Role,
+            gameObjective: gameLogic.gameObjective,
           ),
 
           // Game Field - Main Playing Area
