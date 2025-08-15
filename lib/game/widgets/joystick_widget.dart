@@ -122,15 +122,15 @@ class _JoystickWidgetState extends State<JoystickWidget>
                 height: widget.size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.color.withOpacity(0.1),
+                  color: widget.color.withOpacity(0.05), // More transparent
                   border: Border.all(
-                    color: widget.color.withOpacity(widget.isEnabled ? 0.4 : 0.2),
+                    color: widget.color.withOpacity(widget.isEnabled ? 0.3 : 0.15),
                     width: 3,
                   ),
                   boxShadow: [
                     if (_isDragging)
                       BoxShadow(
-                        color: widget.color.withOpacity(0.3),
+                        color: widget.color.withOpacity(0.2), // More subtle shadow
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -145,9 +145,9 @@ class _JoystickWidgetState extends State<JoystickWidget>
                         height: widget.size * 0.8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: widget.color.withOpacity(0.08),
+                          color: widget.color.withOpacity(0.03), // More transparent
                           border: Border.all(
-                            color: widget.color.withOpacity(0.3),
+                            color: widget.color.withOpacity(0.2),
                             width: 2,
                           ),
                         ),
@@ -163,7 +163,7 @@ class _JoystickWidgetState extends State<JoystickWidget>
                           shape: BoxShape.circle,
                           color: Colors.transparent,
                           border: Border.all(
-                            color: widget.color.withOpacity(0.2),
+                            color: widget.color.withOpacity(0.15), // More transparent
                             width: 1,
                           ),
                         ),
@@ -182,7 +182,7 @@ class _JoystickWidgetState extends State<JoystickWidget>
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.6),
+                          color: widget.color.withOpacity(0.4), // More transparent
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -236,7 +236,7 @@ class _JoystickWidgetState extends State<JoystickWidget>
                         height: widget.size,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.grey.withOpacity(0.5),
+                          color: Colors.grey.withOpacity(0.3), // More transparent
                         ),
                         child: const Center(
                           child: Icon(
@@ -274,15 +274,15 @@ class _JoystickWidgetState extends State<JoystickWidget>
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: widget.color.withOpacity(isActive ? 0.8 : 0.2),
+              color: widget.color.withOpacity(isActive ? 0.6 : 0.1), // More transparent
               border: Border.all(
-                color: widget.color.withOpacity(isActive ? 1.0 : 0.4),
+                color: widget.color.withOpacity(isActive ? 1.0 : 0.3),
                 width: 1,
               ),
             ),
             child: Icon(
               icon,
-              color: isActive ? Colors.white : widget.color,
+              color: isActive ? Colors.white : widget.color.withOpacity(0.7),
               size: 16,
             ),
           ),

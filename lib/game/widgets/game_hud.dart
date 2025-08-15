@@ -75,66 +75,66 @@ class GameHUD extends StatelessWidget {
         ),
 
         // Player Role & Objective Display
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [GameColors.primaryGreen.withOpacity(0.1), Colors.white],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: GameColors.primaryGreen.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              // Player Roles Row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPlayerRoleCard('Player 1', player1Role, GameColors.teamAColor),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildPlayerRoleCard('Player 2', player2Role, GameColors.teamBColor),
-                  ),
-                ],
-              ),
+        // Container(
+        //   margin: const EdgeInsets.symmetric(horizontal: 16),
+        //   padding: const EdgeInsets.all(12),
+        //   decoration: BoxDecoration(
+        //     gradient: LinearGradient(
+        //       colors: [GameColors.primaryGreen.withOpacity(0.1), Colors.white],
+        //     ),
+        //     borderRadius: BorderRadius.circular(12),
+        //     border: Border.all(color: GameColors.primaryGreen.withOpacity(0.3)),
+        //   ),
+        //   child: Column(
+        //     children: [
+        //       // Player Roles Row
+        //       Row(
+        //         children: [
+        //           Expanded(
+        //             child: _buildPlayerRoleCard('Player 1', player1Role, GameColors.teamAColor),
+        //           ),
+        //           const SizedBox(width: 12),
+        //           Expanded(
+        //             child: _buildPlayerRoleCard('Player 2', player2Role, GameColors.teamBColor),
+        //           ),
+        //         ],
+        //       ),
               
-              const SizedBox(height: 8),
+        //       const SizedBox(height: 8),
               
-              // Game Objective
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: GameColors.primaryGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: GameColors.primaryGreen.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.flag,
-                      color: GameColors.primaryGreen,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      gameObjective,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: GameColors.primaryGreen,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        //       // Game Objective
+        //       Container(
+        //         width: double.infinity,
+        //         padding: const EdgeInsets.all(12),
+        //         decoration: BoxDecoration(
+        //           color: GameColors.primaryGreen.withOpacity(0.1),
+        //           borderRadius: BorderRadius.circular(8),
+        //           border: Border.all(color: GameColors.primaryGreen.withOpacity(0.3)),
+        //         ),
+        //         child: Row(
+        //           mainAxisAlignment: MainAxisAlignment.center,
+        //           children: [
+        //             Icon(
+        //               Icons.flag,
+        //               color: GameColors.primaryGreen,
+        //               size: 16,
+        //             ),
+        //             const SizedBox(width: 8),
+        //             Text(
+        //               gameObjective,
+        //               style: const TextStyle(
+        //                 fontSize: 14,
+        //                 fontWeight: FontWeight.w600,
+        //                 color: GameColors.primaryGreen,
+        //               ),
+        //               textAlign: TextAlign.center,
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ],
     );
   }

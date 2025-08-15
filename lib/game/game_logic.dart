@@ -32,22 +32,22 @@ class HadangGameLogic extends ChangeNotifier {
   int scoreBlue = 0;
   String currentPhase = 'Babak 1';
   Duration timeRemaining = const Duration(minutes: 15);
-  
+
   // Field & Players
   final Size fieldSize = const Size(400, 300); // Increased from 350x250
   final List<Player> players = [];
-  
+
   // Controlled Players
   Player? player1; // Player controlled by joystick 1
   Player? player2; // Player controlled by joystick 2
-  
+
   // Game Timer
   Timer? _gameTimer;
   Timer? _aiTimer;
-  
+
   // Score callback for dialog
   Function(String team, int newScore)? onScoreCallback;
-  
+
   // Game Settings
   final double playerRadius = 15.0;
   final double playerSpeed = 1.5; // Reduced for smoother movement
@@ -57,7 +57,7 @@ class HadangGameLogic extends ChangeNotifier {
   // Role and objective tracking
   String get player1Role => player1?.role.toUpperCase() ?? 'UNKNOWN';
   String get player2Role => player2?.role.toUpperCase() ?? 'UNKNOWN';
-  
+
   String get gameObjective {
     if (timeRemaining <= Duration.zero) {
       return _getWinnerText();
@@ -81,32 +81,43 @@ class HadangGameLogic extends ChangeNotifier {
 
   void _initializePlayers() {
     players.clear();
-    
+
     // Red Team (Guards) - positioned on horizontal lines (adjusted for bigger field)
     for (int i = 0; i < 5; i++) {
-      players.add(Player(
-        id: i,
-        team: 'red',
-        role: 'guard',
-        position: Offset(80 + (i * 60), 150), // Adjusted spacing for bigger field
-        isPlayerControlled: i == 0, // First red player is controlled
-      ));
+      players.add(
+        Player(
+          id: i,
+          team: 'red',
+          role: 'guard',
+          position: Offset(
+            80 + (i * 60),
+            150,
+          ), // Adjusted spacing for bigger field
+          isPlayerControlled: i == 0, // First red player is controlled
+        ),
+      );
     }
-    
+
     // Blue Team (Attackers) - positioned at bottom (adjusted for bigger field)
     for (int i = 0; i < 5; i++) {
-      players.add(Player(
-        id: i + 5,
-        team: 'blue',
-        role: 'attacker',
-        position: Offset(80 + (i * 60), 250), // Adjusted for bigger field
-        isPlayerControlled: i == 0, // First blue player is controlled
-      ));
+      players.add(
+        Player(
+          id: i + 5,
+          team: 'blue',
+          role: 'attacker',
+          position: Offset(80 + (i * 60), 250), // Adjusted for bigger field
+          isPlayerControlled: i == 0, // First blue player is controlled
+        ),
+      );
     }
-    
+
     // Set controlled players
-    player1 = players.firstWhere((p) => p.team == 'red' && p.isPlayerControlled);
-    player2 = players.firstWhere((p) => p.team == 'blue' && p.isPlayerControlled);
+    player1 = players.firstWhere(
+      (p) => p.team == 'red' && p.isPlayerControlled,
+    );
+    player2 = players.firstWhere(
+      (p) => p.team == 'blue' && p.isPlayerControlled,
+    );
   }
 
   void startGame() {
@@ -121,7 +132,7 @@ class HadangGameLogic extends ChangeNotifier {
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!isPaused && timeRemaining > Duration.zero) {
         timeRemaining = timeRemaining - const Duration(seconds: 1);
-        
+
         // Check for half time
         if (timeRemaining == const Duration(minutes: 7, seconds: 30)) {
           currentPhase = 'Istirahat';
@@ -129,12 +140,12 @@ class HadangGameLogic extends ChangeNotifier {
         } else if (timeRemaining == const Duration(minutes: 7, seconds: 25)) {
           currentPhase = 'Babak 2';
         }
-        
+
         // End game
         if (timeRemaining <= Duration.zero) {
           _endGame();
         }
-        
+
         notifyListeners();
       }
     });
@@ -153,7 +164,7 @@ class HadangGameLogic extends ChangeNotifier {
 
   void _updateAIPlayers() {
     final random = Random();
-    
+
     for (final player in players) {
       if (!player.isPlayerControlled) {
         // Simplified and predictable AI behavior
@@ -162,19 +173,23 @@ class HadangGameLogic extends ChangeNotifier {
           if (random.nextDouble() < aiMoveChance) {
             double newX = player.position.dx + (random.nextBool() ? 20 : -20);
             // Keep guards within field bounds with padding
-            newX = newX.clamp(playerRadius + 10, fieldSize.width - playerRadius - 10);
+            newX = newX.clamp(
+              playerRadius + 10,
+              fieldSize.width - playerRadius - 10,
+            );
             player.targetPosition = Offset(newX, player.position.dy);
           }
         } else {
           // Attackers move forward very slowly and predictably
-          if (random.nextDouble() < aiMoveChance * 0.5) { // Even slower for attackers
+          if (random.nextDouble() < aiMoveChance * 0.5) {
+            // Even slower for attackers
             double newY = player.position.dy - 5; // Smaller steps
             // Don't let attackers move too far up automatically - adjusted for bigger field
             newY = newY.clamp(100.0, fieldSize.height - playerRadius - 10);
             player.targetPosition = Offset(player.position.dx, newY);
           }
         }
-        
+
         // Apply movement boundaries and smooth movement
         _movePlayerToTargetWithBounds(player);
       }
@@ -185,20 +200,20 @@ class HadangGameLogic extends ChangeNotifier {
     final dx = player.targetPosition.dx - player.position.dx;
     final dy = player.targetPosition.dy - player.position.dy;
     final distance = sqrt(dx * dx + dy * dy);
-    
+
     if (distance > 0.5) {
       final moveX = (dx / distance) * playerSpeed;
       final moveY = (dy / distance) * playerSpeed;
-      
+
       // Apply movement bounds based on role
       Offset newPosition = Offset(
         player.position.dx + moveX,
         player.position.dy + moveY,
       );
-      
+
       // Enforce role-based movement constraints
       newPosition = _enforceMovementRules(player, newPosition);
-      
+
       player.position = newPosition;
       player.isMoving = true;
     } else {
@@ -208,9 +223,15 @@ class HadangGameLogic extends ChangeNotifier {
 
   Offset _enforceMovementRules(Player player, Offset newPosition) {
     // Keep within field bounds
-    double clampedX = newPosition.dx.clamp(playerRadius, fieldSize.width - playerRadius);
-    double clampedY = newPosition.dy.clamp(playerRadius, fieldSize.height - playerRadius);
-    
+    double clampedX = newPosition.dx.clamp(
+      playerRadius,
+      fieldSize.width - playerRadius,
+    );
+    double clampedY = newPosition.dy.clamp(
+      playerRadius,
+      fieldSize.height - playerRadius,
+    );
+
     // Role-specific constraints
     if (player.role == 'guard') {
       // Guards can only move left-right on their horizontal line (with some tolerance)
@@ -221,14 +242,14 @@ class HadangGameLogic extends ChangeNotifier {
         clampedY = player.position.dy; // Prevent moving backward
       }
     }
-    
+
     return Offset(clampedX, clampedY);
   }
 
   void _checkCollisions() {
     final attackers = players.where((p) => p.role == 'attacker').toList();
     final guards = players.where((p) => p.role == 'guard').toList();
-    
+
     for (final attacker in attackers) {
       for (final guard in guards) {
         final distance = _getDistance(attacker.position, guard.position);
@@ -237,9 +258,10 @@ class HadangGameLogic extends ChangeNotifier {
           break;
         }
       }
-      
+
       // Check if attacker reached the top (scored) - adjusted for bigger field
-      if (attacker.position.dy < 45) { // Adjusted scoring threshold
+      if (attacker.position.dy < 45) {
+        // Adjusted scoring threshold
         _onScore(attacker.team);
         _resetPlayerPosition(attacker);
       }
@@ -270,7 +292,10 @@ class HadangGameLogic extends ChangeNotifier {
 
   void _resetPlayerPosition(Player player) {
     if (player.role == 'attacker') {
-      player.position = Offset(player.position.dx, fieldSize.height - 50); // Adjusted for bigger field
+      player.position = Offset(
+        player.position.dx,
+        fieldSize.height - 50,
+      ); // Adjusted for bigger field
     }
     player.targetPosition = player.position;
   }
@@ -280,10 +305,16 @@ class HadangGameLogic extends ChangeNotifier {
     for (final player in players) {
       if (player.role == 'guard') {
         player.role = 'attacker';
-        player.position = Offset(player.position.dx, fieldSize.height - 50); // Adjusted
+        player.position = Offset(
+          player.position.dx,
+          fieldSize.height - 50,
+        ); // Adjusted
       } else {
         player.role = 'guard';
-        player.position = Offset(player.position.dx, fieldSize.height / 2); // Center line
+        player.position = Offset(
+          player.position.dx,
+          fieldSize.height / 2,
+        ); // Center line
       }
       player.targetPosition = player.position;
     }
@@ -310,16 +341,16 @@ class HadangGameLogic extends ChangeNotifier {
   // Player Controls with boundary enforcement
   void movePlayer1(Offset direction) {
     if (isPaused || player1 == null) return;
-    
+
     final moveDistance = playerSpeed * 4; // Faster for manual control
     final newPosition = Offset(
       player1!.position.dx + direction.dx * moveDistance,
       player1!.position.dy + direction.dy * moveDistance,
     );
-    
+
     // Apply movement rules and boundaries
     final constrainedPosition = _enforceMovementRules(player1!, newPosition);
-    
+
     player1!.position = constrainedPosition;
     player1!.targetPosition = constrainedPosition;
     player1!.isMoving = direction.distance > 0.1;
@@ -327,16 +358,16 @@ class HadangGameLogic extends ChangeNotifier {
 
   void movePlayer2(Offset direction) {
     if (isPaused || player2 == null) return;
-    
+
     final moveDistance = playerSpeed * 4; // Faster for manual control
     final newPosition = Offset(
       player2!.position.dx + direction.dx * moveDistance,
       player2!.position.dy + direction.dy * moveDistance,
     );
-    
+
     // Apply movement rules and boundaries
     final constrainedPosition = _enforceMovementRules(player2!, newPosition);
-    
+
     player2!.position = constrainedPosition;
     player2!.targetPosition = constrainedPosition;
     player2!.isMoving = direction.distance > 0.1;
@@ -365,8 +396,12 @@ class HadangGameLogic extends ChangeNotifier {
   String get gameStatusText {
     if (isPaused) return 'Game Paused';
     if (timeRemaining <= Duration.zero) {
-      final winner = scoreRed > scoreBlue ? 'Tim Merah' :
-                    scoreBlue > scoreRed ? 'Tim Biru' : 'Seri';
+      final winner =
+          scoreRed > scoreBlue
+              ? 'Tim Merah'
+              : scoreBlue > scoreRed
+              ? 'Tim Biru'
+              : 'Seri';
       return 'Game Selesai - $winner Menang!';
     }
     return 'Kontrol pemain dengan joystick';

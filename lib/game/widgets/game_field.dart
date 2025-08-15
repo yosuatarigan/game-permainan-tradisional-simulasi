@@ -20,53 +20,42 @@ class GameField extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Use available space while maintaining aspect ratio
-        final availableWidth = constraints.maxWidth;
-        final availableHeight = constraints.maxHeight;
+        // Use full available space
+        final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
         
-        // Maintain 4:3 aspect ratio
-        double width = availableWidth;
-        double height = width * 0.75;
-        
-        if (height > availableHeight) {
-          height = availableHeight;
-          width = height * (4/3);
-        }
-        
-        return Center(
-          child: Container(
-            width: width,
-            height: height,
-            decoration: const BoxDecoration(
-              color: GameColors.fieldBackground,
-            ),
-            child: CustomPaint(
-              painter: FieldPainter(),
-              child: Stack(
-                children: [
-                  // Render all players with scaling
-                  ...players.map((player) {
-                    // Scale player positions to fit actual field size
-                    final scaledPosition = Offset(
-                      (player.position.dx / fieldSize.width) * width,
-                      (player.position.dy / fieldSize.height) * height,
-                    );
-                    
-                    return PlayerWidget(
-                      key: ValueKey(player.id),
-                      player: Player(
-                        id: player.id,
-                        team: player.team,
-                        role: player.role,
-                        position: scaledPosition,
-                        isPlayerControlled: player.isPlayerControlled,
-                        isMoving: player.isMoving,
-                      ),
-                      onTap: () => onPlayerTouch(player),
-                    );
-                  }),
-                ],
-              ),
+        return Container(
+          width: width,
+          height: height,
+          decoration: const BoxDecoration(
+            color: GameColors.fieldBackground,
+          ),
+          child: CustomPaint(
+            painter: FieldPainter(),
+            child: Stack(
+              children: [
+                // Render all players with scaling to full screen
+                ...players.map((player) {
+                  // Scale player positions to fit actual screen size
+                  final scaledPosition = Offset(
+                    (player.position.dx / fieldSize.width) * width,
+                    (player.position.dy / fieldSize.height) * height,
+                  );
+                  
+                  return PlayerWidget(
+                    key: ValueKey(player.id),
+                    player: Player(
+                      id: player.id,
+                      team: player.team,
+                      role: player.role,
+                      position: scaledPosition,
+                      isPlayerControlled: player.isPlayerControlled,
+                      isMoving: player.isMoving,
+                    ),
+                    onTap: () => onPlayerTouch(player),
+                  );
+                }),
+              ],
             ),
           ),
         );
@@ -85,7 +74,7 @@ class FieldPainter extends CustomPainter {
 
     final centerLinePaint = Paint()
       ..color = Colors.yellow.shade700
-      ..strokeWidth = 5.0
+      ..strokeWidth = 6.0
       ..style = PaintingStyle.stroke;
 
     final boundaryPaint = Paint()
@@ -98,9 +87,16 @@ class FieldPainter extends CustomPainter {
       ..strokeWidth = 3.0
       ..style = PaintingStyle.stroke;
 
-    // Draw field background with pattern
+    // Draw field background with subtle gradient
     final backgroundPaint = Paint()
-      ..color = GameColors.fieldBackground;
+      ..shader = LinearGradient(
+        colors: [
+          GameColors.fieldBackground,
+          GameColors.fieldBackground.withOpacity(0.8),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), backgroundPaint);
 
     // Draw field border (thick)
@@ -132,54 +128,35 @@ class FieldPainter extends CustomPainter {
     // Draw goal areas (top and bottom)
     final goalHeight = size.height * 0.15;
     
-    // Top goal area (where attackers need to reach)
+    // Top goal area (where attackers need to reach) - with fill
+    final topGoalRect = Rect.fromLTWH(0, 0, size.width, goalHeight);
     canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, goalHeight),
-      goalAreaPaint..style = PaintingStyle.stroke,
+      topGoalRect,
+      Paint()..color = Colors.green.withOpacity(0.2),
     );
+    canvas.drawRect(topGoalRect, goalAreaPaint..style = PaintingStyle.stroke);
     
-    // Bottom starting area
+    // Bottom starting area - with fill
+    final bottomStartRect = Rect.fromLTWH(0, size.height - goalHeight, size.width, goalHeight);
     canvas.drawRect(
-      Rect.fromLTWH(0, size.height - goalHeight, size.width, goalHeight),
-      boundaryPaint..style = PaintingStyle.stroke,
+      bottomStartRect,
+      Paint()..color = Colors.red.withOpacity(0.2),
     );
+    canvas.drawRect(bottomStartRect, boundaryPaint..style = PaintingStyle.stroke);
 
-    // Draw section numbers for clarity
+    // Draw section numbers for clarity (adaptive size)
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    final sectionNumberSize = (size.width * 0.08).clamp(16.0, 32.0);
     
-    // Section labels
-    for (int row = 0; row < 2; row++) {
-      for (int col = 0; col < 3; col++) {
-        final sectionNumber = (row * 3) + col + 1;
-        final centerX = (col * sectionWidth) + (sectionWidth / 2);
-        final centerY = (row * sectionHeight) + (sectionHeight / 2);
-        
-        textPainter.text = TextSpan(
-          text: '$sectionNumber',
-          style: TextStyle(
-            color: Colors.grey.shade400,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        );
-        textPainter.layout();
-        textPainter.paint(
-          canvas,
-          Offset(centerX - textPainter.width / 2, centerY - textPainter.height / 2),
-        );
-      }
-    }
-
-    // Draw directional arrows for clarity
-    _drawArrow(canvas, Offset(size.width / 2, size.height - 30), 
-               Offset(size.width / 2, 30), Colors.green, 'TUJUAN');
     
-    // Add "GARIS SODOR" label with better styling
+    
+    // Add "GARIS SODOR" label with better styling (adaptive size)
+    final labelSize = (size.width * 0.025).clamp(10.0, 16.0);
     textPainter.text = TextSpan(
       text: 'GARIS SODOR',
       style: TextStyle(
         color: Colors.yellow.shade700,
-        fontSize: 14,
+        fontSize: labelSize,
         fontWeight: FontWeight.bold,
         shadows: [
           Shadow(
@@ -193,37 +170,39 @@ class FieldPainter extends CustomPainter {
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(10, size.height / 2 - 25),
+      Offset(size.width * 0.02, size.height / 2 - (labelSize * 1.5)),
     );
 
-    // Add goal labels
+    // Add goal labels (adaptive size)
+    final goalLabelSize = (size.width * 0.02).clamp(8.0, 14.0);
+    
     textPainter.text = TextSpan(
       text: '⚽ AREA TUJUAN',
       style: TextStyle(
         color: Colors.green.shade700,
-        fontSize: 12,
+        fontSize: goalLabelSize,
         fontWeight: FontWeight.bold,
       ),
     );
     textPainter.layout();
-    textPainter.paint(canvas, Offset(10, 10));
+    textPainter.paint(canvas, Offset(size.width * 0.02, size.height * 0.02));
 
     textPainter.text = TextSpan(
       text: '🏁 AREA START',
       style: TextStyle(
         color: Colors.red.shade700,
-        fontSize: 12,
+        fontSize: goalLabelSize,
         fontWeight: FontWeight.bold,
       ),
     );
     textPainter.layout();
-    textPainter.paint(canvas, Offset(10, size.height - 25));
+    textPainter.paint(canvas, Offset(size.width * 0.02, size.height - goalHeight + (goalLabelSize * 0.5)));
   }
 
-  void _drawArrow(Canvas canvas, Offset start, Offset end, Color color, String label) {
+  void _drawArrow(Canvas canvas, Offset start, Offset end, Color color, double strokeWidth) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 3.0
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
 
     // Draw arrow line
@@ -232,8 +211,7 @@ class FieldPainter extends CustomPainter {
     // Draw arrowhead
     final dx = end.dx - start.dx;
     final dy = end.dy - start.dy;
-    final length = sqrt(dx * dx + dy * dy);
-    final arrowLength = 15.0;
+    final arrowLength = strokeWidth * 5;
     final arrowAngle = 0.5;
 
     final arrowX1 = end.dx - arrowLength * cos(atan2(dy, dx) - arrowAngle);
