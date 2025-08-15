@@ -1,14 +1,12 @@
-
-// File: lib/screens/splash_screen.dart
+// File: lib/screens/splash_screen.dart (Updated for Game Selection)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/game_constants.dart';
 import '../services/asset_manager.dart';
 import '../services/audio_service.dart';
 import '../services/local_storage_service.dart';
-import '../widgets/animated_widgets.dart';
-import 'tutorial_screen.dart';
-import 'menu_screen.dart';
+import '../screens/game_selection_screen.dart';
+import '../screens/egrang_tutorial_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -101,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       await _progressController.forward();
       await AudioService.instance.playMenuMusic();
       
-      // Check if first time user
+      // Navigate to game selection
       await Future.delayed(const Duration(milliseconds: 1000));
       _navigateToNextScreen();
       
@@ -119,18 +117,17 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   void _navigateToNextScreen() {
     final isFirstTime = !LocalStorageService.instance.tutorialCompleted;
-      //  final isFirstTime = true;
     
     if (isFirstTime) {
+      // Show Egrang tutorial for first-time users as introduction
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => TutorialScreen(
-            isFirstTime: true,
+          builder: (context) => EgrangTutorialScreen(
             onCompleted: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const MenuScreen()),
+                MaterialPageRoute(builder: (context) => const GameSelectionScreen()),
               );
             },
           ),
@@ -139,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MenuScreen()),
+        MaterialPageRoute(builder: (context) => const GameSelectionScreen()),
       );
     }
   }
@@ -198,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   ],
                                 ),
                                 child: const Icon(
-                                  Icons.sports_soccer,
+                                  Icons.sports_handball,
                                   size: 60,
                                   color: GameColors.primaryGreen,
                                 ),
@@ -206,26 +203,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               
                               const SizedBox(height: 24),
                               
-                              Text(
-                                GameTexts.appTitle,
+                              const Text(
+                                'PERMAINAN TRADISIONAL',
                                 style: TextStyle(
-                                  fontSize: 36,
+                                  fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      offset: const Offset(2, 2),
-                                      blurRadius: 4,
-                                      color: Colors.black.withOpacity(0.3),
-                                    ),
-                                  ],
                                 ),
                               ),
                               
                               const SizedBox(height: 8),
                               
                               Text(
-                                GameTexts.appSubtitle,
+                                'Hadang & Egrang',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.white.withOpacity(0.9),
@@ -334,7 +324,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 child: Column(
                   children: [
                     Text(
-                      '🎮 Melestarikan Budaya Indonesia',
+                      '🇮🇩 Melestarikan Budaya Indonesia',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 14,
