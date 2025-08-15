@@ -1,10 +1,11 @@
-// File: lib/screens/menu_screen.dart
+// File: lib/screens/menu_screen.dart - Updated with Game Navigation
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/setting_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/tutorial_screen.dart';
 import '../utils/game_constants.dart';
 import '../services/local_storage_service.dart';
+import '../game/hadang_game_screen.dart'; // Import game screen
 import 'statistics_screen.dart';
 import 'about_screen.dart';
 
@@ -256,7 +257,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
                   label: 'MAIN SEKARANG',
                   subtitle: '2 Pemain • Layar Sama',
                   color: GameColors.successColor,
-                  onPressed: _startGame,
+                  onPressed: _startGame, // Updated to navigate to game
                   isMainButton: true,
                 ),
               );
@@ -440,7 +441,15 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _startGame() {}
+  // UPDATED: Navigate to game screen
+  void _startGame() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HadangGameScreen(),
+      ),
+    );
+  }
 
   void _showTutorial() {
     Navigator.push(
@@ -448,7 +457,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
       MaterialPageRoute(
         builder:
             (context) => TutorialScreen(
-              isFirstTime: true,
+              isFirstTime: false,
               onCompleted: () {
                 Navigator.pop(context);
               },
