@@ -1,6 +1,7 @@
 // File: lib/screens/egrang_menu_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:game_permainan_tradisional_simulasi/screens/egrang_game_screen.dart';
 import '../utils/game_constants.dart';
 import '../services/local_storage_service.dart';
 import '../screens/egrang_tutorial_screen.dart';
@@ -13,7 +14,7 @@ class EgrangMenuScreen extends StatefulWidget {
   State<EgrangMenuScreen> createState() => _EgrangMenuScreenState();
 }
 
-class _EgrangMenuScreenState extends State<EgrangMenuScreen> 
+class _EgrangMenuScreenState extends State<EgrangMenuScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _pulseController;
@@ -162,9 +163,10 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
 
           // Enhanced Title
           ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [Colors.white, Colors.orange.shade200],
-            ).createShader(bounds),
+            shaderCallback:
+                (bounds) => LinearGradient(
+                  colors: [Colors.white, Colors.orange.shade200],
+                ).createShader(bounds),
             child: const Text(
               'EGRANG',
               style: TextStyle(
@@ -216,7 +218,15 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
                   label: 'MAIN SEKARANG',
                   subtitle: 'Segera Hadir!',
                   color: Colors.grey.shade600,
-                  onPressed: _showComingSoon,
+                  onPressed: () {
+                    //push
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>  EgrangRaceScreen(),
+                      ),
+                    );
+                  },
                   isMainButton: true,
                 ),
               );
@@ -345,11 +355,7 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.height,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                const Icon(Icons.height, color: Colors.white, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   '🎋 Permainan Keseimbangan Tradisional',
@@ -378,33 +384,34 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
   void _showComingSoon() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.construction, color: GameColors.warningColor),
-            const SizedBox(width: 8),
-            const Text('Segera Hadir!'),
-          ],
-        ),
-        content: const Text(
-          'Game Egrang sedang dalam pengembangan. '
-          'Sementara ini, Anda bisa mempelajari cara bermain '
-          'melalui tutorial yang tersedia.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.construction, color: GameColors.warningColor),
+                const SizedBox(width: 8),
+                const Text('Segera Hadir!'),
+              ],
+            ),
+            content: const Text(
+              'Game Egrang sedang dalam pengembangan. '
+              'Sementara ini, Anda bisa mempelajari cara bermain '
+              'melalui tutorial yang tersedia.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showTutorial();
+                },
+                child: const Text('Lihat Tutorial'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showTutorial();
-            },
-            child: const Text('Lihat Tutorial'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -412,11 +419,12 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EgrangTutorialScreen(
-          onCompleted: () {
-            Navigator.pop(context);
-          },
-        ),
+        builder:
+            (context) => EgrangTutorialScreen(
+              onCompleted: () {
+                Navigator.pop(context);
+              },
+            ),
       ),
     );
   }
