@@ -1,6 +1,7 @@
 // File: lib/screens/egrang_menu_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:game_permainan_tradisional_simulasi/screens/about_egrang_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/egrang_game_screen.dart';
 import '../utils/game_constants.dart';
 import '../services/local_storage_service.dart';
@@ -108,6 +109,7 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
       children: [
         // Header
         Expanded(flex: 3, child: _buildHeader()),
+        const SizedBox(height: 56),
 
         // Menu Buttons
         Expanded(flex: 4, child: _buildMenuButtons()),
@@ -432,7 +434,7 @@ class _EgrangMenuScreenState extends State<EgrangMenuScreen>
   void _showAbout() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AboutScreen()),
+      MaterialPageRoute(builder: (context) => const AboutEgrangScreen()),
     );
   }
 
