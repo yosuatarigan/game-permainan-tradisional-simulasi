@@ -14,6 +14,11 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   double playerY = 0.0; // 0 = ground, negative = jumping
   bool isJumping = false;
   
+  // Animation variables
+  double stepAnimation = 0.0;
+  double stepSpeed = 0.12; // Sedikit lebih lambat untuk terasa seperti egrang
+  bool isMoving = false;
+  
   // Game state
   double progress = 0.0;
   List<Obstacle> obstacles = [];
@@ -70,18 +75,29 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     
     setState(() {
       double newPlayerX = playerX;
+      isMoving = false;
       
       // Manual movement dengan collision detection
       if (movingLeft && playerX > 50) {
         newPlayerX = playerX - moveSpeed;
         if (!_checkRockCollision(newPlayerX)) {
           playerX = newPlayerX;
+          isMoving = true;
         }
       }
       if (movingRight && playerX < finishDistance + 200) {
         newPlayerX = playerX + moveSpeed;
         if (!_checkRockCollision(newPlayerX)) {
           playerX = newPlayerX;
+          isMoving = true;
+        }
+      }
+      
+      // Update step animation hanya saat bergerak dan tidak jumping
+      if (isMoving && !isJumping && playerY >= 0) {
+        stepAnimation += stepSpeed;
+        if (stepAnimation >= 2 * pi) {
+          stepAnimation = 0;
         }
       }
       
@@ -230,6 +246,8 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
       isGameWon = false;
       movingLeft = false;
       movingRight = false;
+      stepAnimation = 0.0;
+      isMoving = false;
       obstacles.clear();
     });
     startGame();
@@ -319,7 +337,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                       ),
                     ).toList(),
                     
-                    // Player
+                    // Player dengan animasi
                     Positioned(
                       bottom: 120 - playerY,
                       left: playerX - cameraOffset - 25,
@@ -327,7 +345,10 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                         width: 50,
                         height: 80,
                         child: CustomPaint(
-                          painter: EgrangPlayerPainter(),
+                          painter: EgrangPlayerPainter(
+                            stepAnimation: stepAnimation,
+                            isMoving: isMoving,
+                          ),
                         ),
                       ),
                     ),
@@ -917,62 +938,148 @@ class BirdPainter extends CustomPainter {
 }
 
 class EgrangPlayerPainter extends CustomPainter {
+  final double stepAnimation;
+  final bool isMoving;
+  
+  EgrangPlayerPainter({
+    required this.stepAnimation,
+    required this.isMoving,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     
-    // Egrang sticks
+    // Calculate realistic egrang step positions
+    double leftFootY = 45; // Default ground position
+    double rightFootY = 45;
+    double leftStickBottomY = 80;
+    double rightStickBottomY = 80;
+    double bodyBounce = 0;
+    
+    if (isMoving) {
+      // Create realistic stepping motion
+      double leftStep = sin(stepAnimation);
+      double rightStep = sin(stepAnimation + pi);
+      
+      // When stepping, foot goes UP (negative Y), when supporting, stays down
+      if (leftStep > 0) {
+        // Left foot is stepping (going up)
+        leftFootY = 45 - (leftStep * 20); // Goes up to 25 pixels
+        leftStickBottomY = 80 - (leftStep * 20); // Stick follows foot
+      }
+      
+      if (rightStep > 0) {
+        // Right foot is stepping (going up)
+        rightFootY = 45 - (rightStep * 20); // Goes up to 25 pixels  
+        rightStickBottomY = 80 - (rightStep * 20); // Stick follows foot
+      }
+      
+      // Body bounces slightly when stepping
+      bodyBounce = -(sin(stepAnimation * 2).abs()) * 2; // Bounce up when either foot steps
+    }
+    
+    // Egrang sticks dengan animasi realistis
     paint.color = Color(0xFFDEB887);
     paint.strokeWidth = 5;
     paint.strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(15, 30), Offset(12, 80), paint);
-    canvas.drawLine(Offset(35, 30), Offset(38, 80), paint);
     
-    // Body
+    // Left stick - follows left foot movement
+    canvas.drawLine(
+      Offset(15, 30 + bodyBounce), 
+      Offset(12, leftStickBottomY), 
+      paint
+    );
+    
+    // Right stick - follows right foot movement
+    canvas.drawLine(
+      Offset(35, 30 + bodyBounce), 
+      Offset(38, rightStickBottomY), 
+      paint
+    );
+    
+    // Body dengan bounce effect
     paint.color = Color(0xFFFF6B6B);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(18, 12, 14, 18),
+        Rect.fromLTWH(18, 12 + bodyBounce, 14, 18),
         Radius.circular(3),
       ),
       paint,
     );
     
-    // Head
+    // Head dengan bounce
     paint.color = Color(0xFFFFDBB5);
-    canvas.drawCircle(Offset(25, 8), 6, paint);
+    canvas.drawCircle(Offset(25, 8 + bodyBounce), 6, paint);
     
     // Hair
     paint.color = Color(0xFF4A4A4A);
     paint.strokeWidth = 1;
     canvas.drawArc(
-      Rect.fromCircle(center: Offset(25, 8), radius: 6),
+      Rect.fromCircle(center: Offset(25, 8 + bodyBounce), radius: 6),
       -pi, pi, false, paint,
     );
     
-    // Arms
+    // Arms bergerak untuk balance
     paint.color = Color(0xFFFFDBB5);
     paint.strokeWidth = 3;
-    canvas.drawLine(Offset(15, 16), Offset(10, 28), paint);
-    canvas.drawLine(Offset(35, 16), Offset(40, 28), paint);
+    double armSwing = isMoving ? sin(stepAnimation) * 3 : 0;
+    canvas.drawLine(Offset(15, 16 + bodyBounce), Offset(10 - armSwing, 28), paint);
+    canvas.drawLine(Offset(35, 16 + bodyBounce), Offset(40 + armSwing, 28), paint);
     
-    // Legs
+    // Legs dengan gerakan realistis
     paint.color = Color(0xFF4169E1);
     paint.strokeWidth = 4;
-    canvas.drawLine(Offset(20, 30), Offset(15, 45), paint);
-    canvas.drawLine(Offset(30, 30), Offset(35, 45), paint);
     
-    // Foot platforms
+    // Left leg - stretch when stepping up
+    canvas.drawLine(
+      Offset(20, 30 + bodyBounce), 
+      Offset(15, leftFootY), 
+      paint
+    );
+    
+    // Right leg - stretch when stepping up
+    canvas.drawLine(
+      Offset(30, 30 + bodyBounce), 
+      Offset(35, rightFootY), 
+      paint
+    );
+    
+    // Foot platforms - move dengan kaki
     paint.color = Color(0xFF8B4513);
-    canvas.drawRect(Rect.fromLTWH(8, 40, 12, 3), paint);
-    canvas.drawRect(Rect.fromLTWH(30, 40, 12, 3), paint);
     
-    // Shoes
+    // Left platform
+    canvas.drawRect(
+      Rect.fromLTWH(8, leftFootY - 5, 12, 3), 
+      paint
+    );
+    
+    // Right platform
+    canvas.drawRect(
+      Rect.fromLTWH(30, rightFootY - 5, 12, 3), 
+      paint
+    );
+    
+    // Shoes ikut gerakan kaki
     paint.color = Color(0xFF000000);
-    canvas.drawOval(Rect.fromLTWH(10, 38, 8, 5), paint);
-    canvas.drawOval(Rect.fromLTWH(32, 38, 8, 5), paint);
+    
+    // Left shoe
+    canvas.drawOval(
+      Rect.fromLTWH(10, leftFootY - 7, 8, 5), 
+      paint
+    );
+    
+    // Right shoe  
+    canvas.drawOval(
+      Rect.fromLTWH(32, rightFootY - 7, 8, 5), 
+      paint
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return oldDelegate is EgrangPlayerPainter && 
+           (oldDelegate.stepAnimation != stepAnimation || 
+            oldDelegate.isMoving != isMoving);
+  }
 }
