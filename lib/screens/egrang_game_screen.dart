@@ -341,13 +341,16 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                     Positioned(
                       bottom: 120 - playerY,
                       left: playerX - cameraOffset - 25,
-                      child: Container(
-                        width: 50,
-                        height: 80,
-                        child: CustomPaint(
-                          painter: EgrangPlayerPainter(
-                            stepAnimation: stepAnimation,
-                            isMoving: isMoving,
+                      child: Transform.scale(
+                        scaleX: movingLeft ? -1 : 1, // Flip saat bergerak kiri
+                        child: Container(
+                          width: 50,
+                          height: 80,
+                          child: CustomPaint(
+                            painter: EgrangPlayerPainter(
+                              stepAnimation: stepAnimation,
+                              isMoving: isMoving,
+                            ),
                           ),
                         ),
                       ),
@@ -957,123 +960,289 @@ class EgrangPlayerPainter extends CustomPainter {
     double rightStickBottomY = 80;
     double bodyBounce = 0;
     
+    // Crossing positions
+    double leftFootX = 18; // Base position
+    double rightFootX = 32; // Base position
+    double leftStickX = 15;
+    double rightStickX = 35;
+    
+    bool leftInFront = false;
+    bool rightInFront = false;
+    
     if (isMoving) {
       // Create realistic stepping motion
       double leftStep = sin(stepAnimation);
       double rightStep = sin(stepAnimation + pi);
       
-      // When stepping, foot goes UP (negative Y), when supporting, stays down
+      // When stepping, foot goes UP and CROSSES OVER
       if (leftStep > 0) {
-        // Left foot is stepping (going up)
+        // Left foot is stepping (going up and crossing to the right)
         leftFootY = 45 - (leftStep * 20); // Goes up to 25 pixels
         leftStickBottomY = 80 - (leftStep * 20); // Stick follows foot
+        leftFootX = 18 + (leftStep * 8); // Crosses to the right
+        leftStickX = 15 + (leftStep * 8);
+        leftInFront = true; // Left foot is in front when stepping
       }
       
       if (rightStep > 0) {
-        // Right foot is stepping (going up)
+        // Right foot is stepping (going up and crossing to the left)
         rightFootY = 45 - (rightStep * 20); // Goes up to 25 pixels  
         rightStickBottomY = 80 - (rightStep * 20); // Stick follows foot
+        rightFootX = 32 - (rightStep * 8); // Crosses to the left
+        rightStickX = 35 - (rightStep * 8);
+        rightInFront = true; // Right foot is in front when stepping
       }
       
       // Body bounces slightly when stepping
       bodyBounce = -(sin(stepAnimation * 2).abs()) * 2; // Bounce up when either foot steps
     }
     
-    // Egrang sticks dengan animasi realistis
+    // Draw sticks and legs in proper depth order (back first, front last)
     paint.color = Color(0xFFDEB887);
     paint.strokeWidth = 5;
     paint.strokeCap = StrokeCap.round;
     
-    // Left stick - follows left foot movement
-    canvas.drawLine(
-      Offset(15, 30 + bodyBounce), 
-      Offset(12, leftStickBottomY), 
-      paint
-    );
+    // Draw back stick first
+    if (!leftInFront) {
+      // Left stick is in back
+      canvas.drawLine(
+        Offset(leftFootX, 30 + bodyBounce), 
+        Offset(leftStickX, leftStickBottomY), 
+        paint
+      );
+    }
     
-    // Right stick - follows right foot movement
-    canvas.drawLine(
-      Offset(35, 30 + bodyBounce), 
-      Offset(38, rightStickBottomY), 
-      paint
-    );
+    if (!rightInFront) {
+      // Right stick is in back
+      canvas.drawLine(
+        Offset(rightFootX, 30 + bodyBounce), 
+        Offset(rightStickX, rightStickBottomY), 
+        paint
+      );
+    }
     
-    // Body dengan bounce effect
+    // Body - profil samping (lebih tipis)
     paint.color = Color(0xFFFF6B6B);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(18, 12 + bodyBounce, 14, 18),
+        Rect.fromLTWH(20, 12 + bodyBounce, 10, 18), // Lebih tipis dari samping
         Radius.circular(3),
       ),
       paint,
     );
     
-    // Head dengan bounce
+    // Head - profil samping
     paint.color = Color(0xFFFFDBB5);
-    canvas.drawCircle(Offset(25, 8 + bodyBounce), 6, paint);
-    
-    // Hair
-    paint.color = Color(0xFF4A4A4A);
-    paint.strokeWidth = 1;
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(25, 8 + bodyBounce), radius: 6),
-      -pi, pi, false, paint,
+    canvas.drawOval(
+      Rect.fromLTWH(22, 5 + bodyBounce, 12, 10), // Oval untuk kepala profil
+      paint
     );
     
-    // Arms bergerak untuk balance
+    // Hair - rambut di belakang kepala
+    paint.color = Color(0xFF4A4A4A);
+    final hairPath = Path();
+    hairPath.moveTo(22, 8 + bodyBounce);
+    hairPath.quadraticBezierTo(20, 5 + bodyBounce, 22, 2 + bodyBounce);
+    hairPath.quadraticBezierTo(28, 1 + bodyBounce, 32, 4 + bodyBounce);
+    hairPath.quadraticBezierTo(30, 7 + bodyBounce, 28, 8 + bodyBounce);
+    canvas.drawPath(hairPath, paint);
+    
+    // Mata - di sisi kepala
+    paint.color = Colors.black;
+    canvas.drawCircle(Offset(29, 8 + bodyBounce), 1.5, paint);
+    
+    // Hidung kecil
+    paint.color = Color(0xFFFFB3B3);
+    canvas.drawCircle(Offset(34, 10 + bodyBounce), 1, paint);
+    
+    // Arms - dari samping
     paint.color = Color(0xFFFFDBB5);
     paint.strokeWidth = 3;
-    double armSwing = isMoving ? sin(stepAnimation) * 3 : 0;
-    canvas.drawLine(Offset(15, 16 + bodyBounce), Offset(10 - armSwing, 28), paint);
-    canvas.drawLine(Offset(35, 16 + bodyBounce), Offset(40 + armSwing, 28), paint);
+    paint.strokeCap = StrokeCap.round;
     
-    // Legs dengan gerakan realistis
+    double armSwing = isMoving ? sin(stepAnimation) * 3 : 0;
+    
+    // Back arm
+    canvas.drawLine(
+      Offset(22, 16 + bodyBounce), 
+      Offset(15 + armSwing, 25), 
+      paint
+    );
+    
+    // Front arm  
+    canvas.drawLine(
+      Offset(28, 16 + bodyBounce), 
+      Offset(38 - armSwing, 25), 
+      paint
+    );
+    
+    // Legs - profil samping dengan depth dan crossing
     paint.color = Color(0xFF4169E1);
     paint.strokeWidth = 4;
     
-    // Left leg - stretch when stepping up
-    canvas.drawLine(
-      Offset(20, 30 + bodyBounce), 
-      Offset(15, leftFootY), 
-      paint
-    );
+    // Draw back leg first
+    if (!leftInFront) {
+      // Left leg is in back
+      canvas.drawLine(
+        Offset(22, 30 + bodyBounce), 
+        Offset(leftFootX, leftFootY), 
+        paint
+      );
+    }
     
-    // Right leg - stretch when stepping up
-    canvas.drawLine(
-      Offset(30, 30 + bodyBounce), 
-      Offset(35, rightFootY), 
-      paint
-    );
+    if (!rightInFront) {
+      // Right leg is in back
+      canvas.drawLine(
+        Offset(28, 30 + bodyBounce), 
+        Offset(rightFootX, rightFootY), 
+        paint
+      );
+    }
     
-    // Foot platforms - move dengan kaki
+    // Draw back foot platforms and shoes
     paint.color = Color(0xFF8B4513);
     
-    // Left platform
-    canvas.drawRect(
-      Rect.fromLTWH(8, leftFootY - 5, 12, 3), 
-      paint
-    );
+    if (!leftInFront) {
+      // Left platform is in back
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(leftStickX - 3, leftFootY - 5, 12, 3),
+          Radius.circular(1),
+        ),
+        paint
+      );
+    }
     
-    // Right platform
-    canvas.drawRect(
-      Rect.fromLTWH(30, rightFootY - 5, 12, 3), 
-      paint
-    );
+    if (!rightInFront) {
+      // Right platform is in back
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rightStickX - 3, rightFootY - 5, 12, 3),
+          Radius.circular(1),
+        ),
+        paint
+      );
+    }
     
-    // Shoes ikut gerakan kaki
+    // Draw back shoes
     paint.color = Color(0xFF000000);
     
-    // Left shoe
-    canvas.drawOval(
-      Rect.fromLTWH(10, leftFootY - 7, 8, 5), 
-      paint
-    );
+    if (!leftInFront) {
+      // Left shoe is in back
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(leftStickX - 5, leftFootY - 7, 10, 4),
+          Radius.circular(2),
+        ),
+        paint
+      );
+    }
     
-    // Right shoe  
-    canvas.drawOval(
-      Rect.fromLTWH(32, rightFootY - 7, 8, 5), 
-      paint
-    );
+    if (!rightInFront) {
+      // Right shoe is in back  
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rightStickX - 5, rightFootY - 7, 10, 4),
+          Radius.circular(2),
+        ),
+        paint
+      );
+    }
+    
+    // Now draw front stick, leg, platform, and shoe (what's stepping)
+    paint.color = Color(0xFFDEB887);
+    paint.strokeWidth = 5;
+    paint.strokeCap = StrokeCap.round;
+    
+    if (leftInFront) {
+      // Left stick is in front
+      canvas.drawLine(
+        Offset(leftFootX, 30 + bodyBounce), 
+        Offset(leftStickX, leftStickBottomY), 
+        paint
+      );
+    }
+    
+    if (rightInFront) {
+      // Right stick is in front
+      canvas.drawLine(
+        Offset(rightFootX, 30 + bodyBounce), 
+        Offset(rightStickX, rightStickBottomY), 
+        paint
+      );
+    }
+    
+    // Draw front legs
+    paint.color = Color(0xFF4169E1);
+    paint.strokeWidth = 4;
+    
+    if (leftInFront) {
+      // Left leg is in front
+      canvas.drawLine(
+        Offset(22, 30 + bodyBounce), 
+        Offset(leftFootX, leftFootY), 
+        paint
+      );
+    }
+    
+    if (rightInFront) {
+      // Right leg is in front
+      canvas.drawLine(
+        Offset(28, 30 + bodyBounce), 
+        Offset(rightFootX, rightFootY), 
+        paint
+      );
+    }
+    
+    // Draw front platforms
+    paint.color = Color(0xFF8B4513);
+    
+    if (leftInFront) {
+      // Left platform is in front
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(leftStickX - 3, leftFootY - 5, 12, 3),
+          Radius.circular(1),
+        ),
+        paint
+      );
+    }
+    
+    if (rightInFront) {
+      // Right platform is in front
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rightStickX - 3, rightFootY - 5, 12, 3),
+          Radius.circular(1),
+        ),
+        paint
+      );
+    }
+    
+    // Draw front shoes
+    paint.color = Color(0xFF000000);
+    
+    if (leftInFront) {
+      // Left shoe is in front
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(leftStickX - 5, leftFootY - 7, 10, 4),
+          Radius.circular(2),
+        ),
+        paint
+      );
+    }
+    
+    if (rightInFront) {
+      // Right shoe is in front  
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rightStickX - 5, rightFootY - 7, 10, 4),
+          Radius.circular(2),
+        ),
+        paint
+      );
+    }
   }
 
   @override
