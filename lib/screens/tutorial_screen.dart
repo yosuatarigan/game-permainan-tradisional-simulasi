@@ -247,18 +247,19 @@ class _TutorialScreenState extends State<TutorialScreen> {
       title: 'Layout Lapangan',
       content: Column(
         children: [
-          // Container wrapper untuk memberi ruang pada label
+          // Container wrapper untuk lapangan
           SizedBox(
-            height: 370, // Tambah ruang untuk label depan-belakang
+            height: 400,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 300,
-                  height: 300,
+                  width: 320,
+                  height: 350,
                   decoration: BoxDecoration(
-                    color: Colors.green[50],
+                    color: Colors.green[100],
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.black, width: 3),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -266,114 +267,208 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       children: [
                         // Field background
                         Container(
-                          width: 300,
-                          height: 300,
+                          width: 320,
+                          height: 350,
                           color: Colors.green[100],
                         ),
 
-                        // 6 kotak field sections (3x2 grid) - tanpa nomor
-                        ...List.generate(6, (index) {
-                          int col = index % 3; // 0, 1, 2
-                          int row = index ~/ 3; // 0, 1
-
-                          return Positioned(
-                            left: col * 100.0,
-                            top: row * 150.0,
-                            width: 100.0,
-                            height: 150.0,
-                            child: Container(color: Colors.green[100]),
-                          );
-                        }),
-
-                        // Garis horizontal atas
+                        // 4 Garis horizontal untuk penjaga 1-4
                         Positioned(
                           left: 0,
-                          top: 0,
+                          top: 70,
                           right: 0,
-                          child: Container(height: 6, color: Colors.black),
+                          child: Container(height: 3, color: Colors.black),
                         ),
 
-                        // Garis horizontal bawah
                         Positioned(
                           left: 0,
-                          bottom: 0,
+                          top: 140,
                           right: 0,
-                          child: Container(height: 6, color: Colors.black),
+                          child: Container(height: 3, color: Colors.black),
                         ),
 
-                        // 4 Garis vertikal
-                        // Garis vertikal kiri
                         Positioned(
                           left: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(width: 6, color: Colors.black),
-                        ),
-
-                        // Garis vertikal tengah kiri
-                        Positioned(
-                          left: 97,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(width: 6, color: Colors.black),
-                        ),
-
-                        // Garis vertikal tengah kanan
-                        Positioned(
-                          left: 197,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(width: 6, color: Colors.black),
-                        ),
-
-                        // Garis vertikal kanan
-                        Positioned(
+                          top: 210,
                           right: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: Container(width: 6, color: Colors.black),
+                          child: Container(height: 3, color: Colors.black),
                         ),
 
-                        // Garis kuning horizontal di tengah (Sodor)
                         Positioned(
                           left: 0,
-                          top: 147,
+                          top: 280,
                           right: 0,
+                          child: Container(height: 3, color: Colors.black),
+                        ),
+
+                        // Garis vertikal tengah untuk penjaga 5
+                        Positioned(
+                          left: 157,
+                          top: 70,
+                          width: 3,
+                          height: 210, // Dari garis 1 sampai garis 4
+                          child: Container(color: Colors.red),
+                        ),
+
+                        // Penjaga dots dan labels
+                        // Penjaga 1
+                        Positioned(
+                          left: 80,
+                          top: 62,
                           child: Container(
-                            height: 6,
-                            color: Colors.yellow[700],
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '1',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
 
-                        // Label Sodor
+                        // Penjaga 2
                         Positioned(
-                          left: 20,
-                          top: 125,
+                          right: 80,
+                          top: 132,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            width: 16,
+                            height: 16,
                             decoration: BoxDecoration(
-                              color: Colors.yellow[700],
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: const Text(
-                              'GARIS SODOR',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
+                            child: Center(
+                              child: Text(
+                                '2',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
+                          ),
+                        ),
+
+                        // Penjaga 3
+                        Positioned(
+                          left: 80,
+                          top: 202,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '3',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Penjaga 4
+                        Positioned(
+                          right: 80,
+                          top: 272,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '4',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Penjaga 5 (di garis vertikal)
+                        Positioned(
+                          left: 149,
+                          top: 175,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '5',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Player penyerang (contoh)
+                        Positioned(
+                          left: 30,
+                          bottom: 30,
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'P',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 6,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Arrow menunjukkan arah gerakan
+                        Positioned(
+                          left: 50,
+                          bottom: 25,
+                          child: Icon(
+                            Icons.arrow_upward,
+                            color: Colors.blue,
+                            size: 20,
                           ),
                         ),
                       ],
@@ -381,9 +476,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   ),
                 ),
 
-                // Label DEPAN (Bagian Atas)
+                // Label START (Bagian Bawah)
                 Positioned(
-                  top: 0,
+                  bottom: 0,
                   left: 50,
                   right: 50,
                   child: Container(
@@ -412,10 +507,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         ),
                         const SizedBox(width: 8),
                         const Text(
-                          'AREA DEPAN (START)',
+                          'AREA START',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
                           ),
@@ -425,9 +520,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   ),
                 ),
 
-                // Label BELAKANG (Bagian Bawah)
+                // Label FINISH (Bagian Atas)
                 Positioned(
-                  bottom: 0,
+                  top: 0,
                   left: 50,
                   right: 50,
                   child: Container(
@@ -436,11 +531,11 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       horizontal: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red[600],
+                      color: Colors.green[600],
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.3),
+                          color: Colors.green.withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -452,10 +547,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         Icon(Icons.flag, color: Colors.white, size: 16),
                         const SizedBox(width: 8),
                         const Text(
-                          'AREA BELAKANG (TUJUAN)',
+                          'AREA FINISH',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
                           ),
@@ -471,7 +566,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
           const SizedBox(height: 24),
 
           const Text(
-            'Lapangan berukuran 15m x 9m dibagi menjadi 6 petak',
+            'Lapangan Gobak Sodor dengan 5 Penjaga',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
@@ -498,9 +593,56 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ),
             child: Column(
               children: [
-                _buildLegendItem(Colors.black, 'Garis Pembatas Lapangan'),
+                _buildLegendItem(
+                  Colors.black,
+                  'Garis Horizontal (Penjaga 1-4)',
+                ),
                 const SizedBox(height: 8),
-                _buildLegendItem(Colors.yellow[700]!, 'Garis Sodor (Tengah)'),
+                _buildLegendItem(Colors.red, 'Garis Vertikal (Penjaga 5)'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Posisi Penjaga (1-5)',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: GameColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Penyerang (P)',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: GameColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -514,19 +656,57 @@ class _TutorialScreenState extends State<TutorialScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Penyerang bergerak melalui kotak-kotak untuk mencapai sisi seberang',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.blue[700],
-                      fontWeight: FontWeight.w500,
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Penjaga 1-4: Bergerak kiri-kanan di garis horizontal',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Penjaga 5: Bergerak atas-bawah di garis vertikal tengah',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Penyerang: Harus melewati semua garis untuk sampai ke finish',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

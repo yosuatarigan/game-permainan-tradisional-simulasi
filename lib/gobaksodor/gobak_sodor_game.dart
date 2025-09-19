@@ -35,19 +35,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   List<Guard> guards = [];
   
   // Joystick
-  Offset joystickCenter = Offset.zero;
-  Offset knobPosition = Offset.zero;
+  Offset joystickCenter = const Offset(80, 80);
+  Offset knobPosition = const Offset(80, 80);
   bool joystickActive = false;
   final double joystickRadius = 50;
   final double knobRadius = 20;
-  
-  @override
-  void initState() {
-    super.initState();
-    joystickCenter = Offset(joystickRadius * 1.1, joystickRadius * 1.1);
-    knobPosition = joystickCenter;
-    _initializeGame();
-  }
   
   // Particles
   List<Particle> particles = [];
@@ -60,7 +52,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   final double guardSize = 24;
   final double maxSpeed = 3.0;
   
-
+  @override
+  void initState() {
+    super.initState();
+    _initializeGame();
+  }
   
   void _initializeGame() {
     // Animation controllers
@@ -82,13 +78,13 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     // Listen to particle animation for game loop
     _particleController.addListener(_gameLoop);
     
-    // Initialize guards dengan range movement yang lebih luas
+    // Initialize guards dengan posisi yang lebih akurat
     guards = [
-      Guard(1, const Offset(200, 100), true, 320, _guardController), // Horizontal guard 1 - hampir full width
-      Guard(2, const Offset(200, 180), true, 320, _guardController), // Horizontal guard 2
-      Guard(3, const Offset(200, 260), true, 320, _guardController), // Horizontal guard 3  
-      Guard(4, const Offset(200, 340), true, 320, _guardController), // Horizontal guard 4
-      Guard(5, const Offset(200, 220), false, 180, _guardController), // Vertical guard 5 - lebih banyak range
+      Guard(1, const Offset(200, 100), true, 140, _guardController), // Horizontal guard 1
+      Guard(2, const Offset(200, 180), true, 140, _guardController), // Horizontal guard 2
+      Guard(3, const Offset(200, 260), true, 140, _guardController), // Horizontal guard 3
+      Guard(4, const Offset(200, 340), true, 140, _guardController), // Horizontal guard 4
+      Guard(5, const Offset(200, 220), false, 110, _guardController), // Vertical guard 5
     ];
   }
   
@@ -105,8 +101,10 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         
         playerPosition = Offset(newX, newY);
         
-        // Add trail particles when moving - ALWAYS saat joystick aktif
-        _addTrailParticle();
+        // Add trail particles when moving
+        if (playerVelocity.distance > 0.5) {
+          _addTrailParticle();
+        }
         
         playerMoving = playerVelocity.distance > 0.5;
       } else {
@@ -150,12 +148,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       hasReachedFinish = false;
       playerCaught = false;
       gameMessage = 'Pemain 1 - Menuju Finish';
-      playerVelocity = Offset.zero;
-      joystickActive = false;
-      knobPosition = joystickCenter;
-      // Clear semua particles
-      particles.clear();
-      trailParticles.clear();
     });
   }
   
@@ -172,7 +164,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     if (distance <= joystickRadius) {
       setState(() {
         knobPosition = localPosition;
-        joystickActive = distance > 8; // Dead zone lebih besar
+        joystickActive = distance > 5; // Dead zone
         
         if (joystickActive) {
           // Calculate velocity based on joystick position
@@ -202,69 +194,75 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     });
   }
   
-  // Particle Methods - Dibuat lebih simple dan terlihat
+  // Particle Methods
   void _addTrailParticle() {
-    if (trailParticles.length > 8) {
+    if (trailParticles.length > 20) {
       trailParticles.removeAt(0);
     }
     
     trailParticles.add(Particle(
-      position: Offset(playerPosition.dx, playerPosition.dy),
-      velocity: Offset(0, 0), // Static trail
-      life: 15,
-      maxLife: 15,
-      color: Colors.cyan,
-      size: 12, // Besar supaya terlihat
+      position: playerPosition + Offset(
+        (Random().nextDouble() - 0.5) * 10,
+        (Random().nextDouble() - 0.5) * 10,
+      ),
+      velocity: -playerVelocity * 0.3 + Offset(
+        (Random().nextDouble() - 0.5) * 2,
+        (Random().nextDouble() - 0.5) * 2,
+      ),
+      life: 30,
+      maxLife: 30,
+      color: Colors.blue.withOpacity(0.6),
+      size: 3,
     ));
   }
   
   void _addSuccessParticles() {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 15; i++) {
       particles.add(Particle(
-        position: Offset(playerPosition.dx, playerPosition.dy),
+        position: playerPosition,
         velocity: Offset(
-          (Random().nextDouble() - 0.5) * 10,
-          (Random().nextDouble() - 0.5) * 10,
+          (Random().nextDouble() - 0.5) * 8,
+          (Random().nextDouble() - 0.5) * 8,
         ),
         life: 60,
         maxLife: 60,
         color: Colors.green,
-        size: 20, // Sangat besar
+        size: 4,
       ));
     }
   }
   
   void _addExplosionParticles() {
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 20; i++) {
       particles.add(Particle(
-        position: Offset(playerPosition.dx, playerPosition.dy),
+        position: playerPosition,
         velocity: Offset(
-          (Random().nextDouble() - 0.5) * 8,
-          (Random().nextDouble() - 0.5) * 8,
+          (Random().nextDouble() - 0.5) * 10,
+          (Random().nextDouble() - 0.5) * 10,
         ),
         life: 40,
         maxLife: 40,
-        color: Colors.red,
-        size: 18, // Besar dan merah terang
+        color: Colors.orange,
+        size: 5,
       ));
     }
   }
   
   void _addVictoryParticles() {
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < 30; i++) {
       particles.add(Particle(
         position: Offset(
-          100 + Random().nextDouble() * 200,
-          100 + Random().nextDouble() * 200,
+          Random().nextDouble() * fieldWidth,
+          Random().nextDouble() * fieldHeight,
         ),
         velocity: Offset(
-          (Random().nextDouble() - 0.5) * 4,
-          Random().nextDouble() * -6,
+          (Random().nextDouble() - 0.5) * 6,
+          Random().nextDouble() * -8 - 2,
         ),
-        life: 100,
-        maxLife: 100,
-        color: Colors.yellow,
-        size: 25, // Sangat besar
+        life: 120,
+        maxLife: 120,
+        color: [Colors.yellow, Colors.green, Colors.blue][Random().nextInt(3)],
+        size: 6,
       ));
     }
   }
@@ -384,7 +382,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       ),
       body: Column(
         children: [
-          // Game status dengan debug info
+          // Game status
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -399,11 +397,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     _buildStatusCard('Gagal', '$playersFailed'),
                     _buildStatusCard('Skor', '$totalScore/5'),
                   ],
-                ),
-                // DEBUG INFO
-                Text(
-                  'DEBUG: Particles: ${particles.length}, Trail: ${trailParticles.length}',
-                  style: const TextStyle(color: Colors.yellow, fontSize: 12),
                 ),
                 if (gameMessage.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -616,67 +609,54 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                   Expanded(
                     child: Center(
                       child: Container(
-                        width: joystickRadius * 2.2,
-                        height: joystickRadius * 2.2,
+                        width: joystickRadius * 2.5,
+                        height: joystickRadius * 2.5,
                         child: GestureDetector(
                           onPanStart: (details) {
-                            Offset localPosition = details.localPosition;
+                            RenderBox box = context.findRenderObject() as RenderBox;
+                            Offset localPosition = box.globalToLocal(details.globalPosition);
+                            // Adjust for joystick area position
+                            localPosition = localPosition - Offset(
+                              (MediaQuery.of(context).size.width - joystickRadius * 2.5) / 2,
+                              MediaQuery.of(context).size.height - 180 + 20 + 60, // Adjust for container positions
+                            );
                             _updateJoystick(localPosition);
                           },
                           onPanUpdate: (details) {
-                            Offset localPosition = details.localPosition;
+                            RenderBox box = context.findRenderObject() as RenderBox;
+                            Offset localPosition = box.globalToLocal(details.globalPosition);
+                            // Adjust for joystick area position
+                            localPosition = localPosition - Offset(
+                              (MediaQuery.of(context).size.width - joystickRadius * 2.5) / 2,
+                              MediaQuery.of(context).size.height - 180 + 20 + 60,
+                            );
                             _updateJoystick(localPosition);
                           },
                           onPanEnd: (details) {
                             _stopJoystick();
                           },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(joystickRadius * 1.1),
-                              color: Colors.black.withOpacity(0.1),
+                          child: CustomPaint(
+                            painter: JoystickPainter(
+                              center: joystickCenter,
+                              knobPosition: knobPosition,
+                              joystickRadius: joystickRadius,
+                              knobRadius: knobRadius,
+                              isActive: joystickActive,
                             ),
-                            child: CustomPaint(
-                              painter: JoystickPainter(
-                                center: Offset(joystickRadius * 1.1, joystickRadius * 1.1),
-                                knobPosition: knobPosition,
-                                joystickRadius: joystickRadius,
-                                knobRadius: knobRadius,
-                                isActive: joystickActive,
-                              ),
-                              size: Size(joystickRadius * 2.2, joystickRadius * 2.2),
-                            ),
+                            size: Size(joystickRadius * 2.5, joystickRadius * 2.5),
                           ),
                         ),
                       ),
                     ),
                   ),
                   
-                  // Instructions + Test Button
-                  Column(
-                    children: [
-                      const Text(
-                        'Drag joystick untuk bergerak',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // TEST BUTTON untuk debug particles
-                      ElevatedButton(
-                        onPressed: () {
-                          _addExplosionParticles();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          minimumSize: const Size(120, 30),
-                        ),
-                        child: const Text(
-                          'Test Effect',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                  // Instructions
+                  const Text(
+                    'Drag joystick untuk bergerak',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
                 
@@ -772,16 +752,12 @@ class Guard {
   
   Offset getCurrentPosition() {
     double progress = controller.value;
-    double movement = sin(progress * 2 * pi + id * 0.8) * (movementRange / 2);
+    double movement = sin(progress * 2 * pi + id * 0.3) * (movementRange / 2);
     
     if (isHorizontal) {
-      // Clamp untuk memastikan tidak keluar batas field
-      double newX = (basePosition.dx + movement).clamp(40.0, 360.0);
-      return Offset(newX, basePosition.dy);
+      return Offset(basePosition.dx + movement, basePosition.dy);
     } else {
-      // Vertical guard bergerak di antara garis horizontal
-      double newY = (basePosition.dy + movement).clamp(120.0, 320.0);
-      return Offset(basePosition.dx, newY);
+      return Offset(basePosition.dx, basePosition.dy + movement);
     }
   }
 }
@@ -898,13 +874,8 @@ class Particle {
   
   void update() {
     position += velocity;
-    velocity *= 0.96; // Friction - sedikit lebih lambat supaya terlihat lebih lama
+    velocity *= 0.98; // Friction
     life--;
-    
-    // Add gravity untuk beberapa particle
-    if (velocity.dy > -20) {
-      velocity = Offset(velocity.dx, velocity.dy + 0.2);
-    }
   }
   
   double get opacity {
@@ -912,7 +883,7 @@ class Particle {
   }
 }
 
-// Particle painter - Simplified untuk debug
+// Particle painter
 class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
   final List<Particle> trailParticles;
@@ -924,36 +895,32 @@ class ParticlePainter extends CustomPainter {
   
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
+    final paint = Paint();
     
-    // Draw trail particles dengan warna solid
+    // Draw trail particles
     for (Particle particle in trailParticles) {
-      paint.color = Colors.cyan; // Warna solid, tidak pakai opacity
+      paint.color = particle.color.withOpacity(particle.opacity * 0.5);
       canvas.drawCircle(
         particle.position,
-        particle.size.toDouble(),
+        particle.size * particle.opacity,
         paint,
       );
     }
     
-    // Draw main particles dengan warna solid  
+    // Draw main particles
     for (Particle particle in particles) {
-      paint.color = particle.color; // Warna solid
+      paint.color = particle.color.withOpacity(particle.opacity);
       canvas.drawCircle(
         particle.position,
-        particle.size.toDouble(),
+        particle.size * particle.opacity,
         paint,
       );
     }
-    
-    // DEBUG: Gambar kotak merah di sudut untuk memastikan painter berjalan
-    paint.color = Colors.purple;
-    canvas.drawCircle(Offset(20, 20), 8, paint);
   }
   
   @override
   bool shouldRepaint(ParticlePainter oldDelegate) {
-    return true; // Selalu repaint
+    return true;
   }
 }
 
