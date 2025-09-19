@@ -280,18 +280,18 @@ class _GameSelectionScreenState extends State<GameSelectionScreen>
                         ),
                       ),
                       
-                      const SizedBox(height: 4),
+                      // const SizedBox(height: 4),
                       
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: color.withOpacity(0.8),
-                        ),
-                      ),
+                      // Text(
+                      //   subtitle,
+                      //   style: TextStyle(
+                      //     fontSize: 14,
+                      //     fontWeight: FontWeight.w600,
+                      //     color: color.withOpacity(0.8),
+                      //   ),
+                      // ),
                       
-                      const SizedBox(height: 8),
+                      // const SizedBox(height: 8),
                       
                       Text(
                         description,

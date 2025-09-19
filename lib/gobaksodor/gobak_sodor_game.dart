@@ -22,6 +22,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   bool gameStarted = false;
   bool gameOver = false;
   bool playerCaught = false;
+  bool playerCompleted = false; // Track if current player completed
   String gameMessage = '';
   
   // Player position
@@ -89,7 +90,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _gameLoop() {
-    if (!gameStarted || gameOver || playerCaught) return;
+    if (!gameStarted || gameOver || playerCaught || playerCompleted) return;
     
     setState(() {
       // Update player position with velocity
@@ -131,7 +132,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     
     // Check if returned home successfully
     if (hasReachedFinish && returningHome && playerPosition.dy >= 420) {
-      _playerCompleted();
+      _playerCompletedRound();
     }
   }
   
@@ -147,16 +148,13 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       returningHome = false;
       hasReachedFinish = false;
       playerCaught = false;
+      playerCompleted = false;
       gameMessage = 'Pemain 1 - Menuju Finish';
     });
   }
   
-  void _movePlayer(Offset direction) {
-    // Legacy method - now using joystick
-  }
-  
   void _updateJoystick(Offset localPosition) {
-    if (!gameStarted || gameOver || playerCaught) return;
+    if (!gameStarted || gameOver || playerCaught || playerCompleted) return;
     
     Offset delta = localPosition - joystickCenter;
     double distance = delta.distance;
@@ -212,7 +210,10 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       life: 30,
       maxLife: 30,
       color: Colors.blue.withOpacity(0.6),
-      size: 3,
+      size: Random().nextDouble() * 2 + 2,
+      shape: ParticleShape.values[Random().nextInt(ParticleShape.values.length)],
+      rotation: Random().nextDouble() * 2 * pi,
+      rotationSpeed: (Random().nextDouble() - 0.5) * 0.2,
     ));
   }
   
@@ -226,8 +227,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         ),
         life: 60,
         maxLife: 60,
-        color: Colors.green,
-        size: 4,
+        color: [Colors.green, Colors.lightGreen, Colors.greenAccent][Random().nextInt(3)],
+        size: Random().nextDouble() * 3 + 3,
+        shape: ParticleShape.star,
+        rotation: Random().nextDouble() * 2 * pi,
+        rotationSpeed: (Random().nextDouble() - 0.5) * 0.3,
       ));
     }
   }
@@ -242,8 +246,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         ),
         life: 40,
         maxLife: 40,
-        color: Colors.orange,
-        size: 5,
+        color: [Colors.orange, Colors.red, Colors.deepOrange][Random().nextInt(3)],
+        size: Random().nextDouble() * 3 + 4,
+        shape: ParticleShape.diamond,
+        rotation: Random().nextDouble() * 2 * pi,
+        rotationSpeed: (Random().nextDouble() - 0.5) * 0.4,
       ));
     }
   }
@@ -261,8 +268,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         ),
         life: 120,
         maxLife: 120,
-        color: [Colors.yellow, Colors.green, Colors.blue][Random().nextInt(3)],
-        size: 6,
+        color: [Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.pink][Random().nextInt(5)],
+        size: Random().nextDouble() * 4 + 4,
+        shape: ParticleShape.values[Random().nextInt(ParticleShape.values.length)],
+        rotation: Random().nextDouble() * 2 * pi,
+        rotationSpeed: (Random().nextDouble() - 0.5) * 0.5,
       ));
     }
   }
@@ -290,6 +300,8 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _playerCaught() {
+    if (playerCaught || playerCompleted) return; // Prevent multiple calls
+    
     setState(() {
       playerCaught = true;
       playersFailed++;
@@ -309,8 +321,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     });
   }
   
-  void _playerCompleted() {
+  void _playerCompletedRound() {
+    if (playerCaught || playerCompleted) return; // Prevent multiple calls
+    
     setState(() {
+      playerCompleted = true;
       playersCompleted++;
       totalScore++;
       gameMessage = 'Pemain $currentPlayer Berhasil! (+1 Poin)';
@@ -330,8 +345,9 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _nextPlayer() {
+    // Check if all 5 players have played
     if (currentPlayer >= 5) {
-      // Game finished
+      // Game finished - all 5 players have played
       setState(() {
         gameOver = true;
         gameStarted = false;
@@ -343,6 +359,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       setState(() {
         currentPlayer++;
         playerCaught = false;
+        playerCompleted = false;
         playerPosition = const Offset(200, 460);
         returningHome = false;
         hasReachedFinish = false;
@@ -442,139 +459,98 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                   border: Border.all(color: Colors.white, width: 3),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: AnimatedBuilder(
-                  animation: _guardController,
-                  builder: (context, child) {
-                    return Stack(
-                      children: [
-                        // Field background with lines
-                        CustomPaint(
-                          painter: GameFieldPainter(),
-                          size: Size(fieldWidth, fieldHeight),
-                        ),
-                        // Guards
-                        ...guards.map((guard) {
-                          Offset pos = guard.getCurrentPosition();
-                          return Positioned(
-                            left: pos.dx - guardSize / 2,
-                            top: pos.dy - guardSize / 2,
-                            child: Container(
-                              width: guardSize,
-                              height: guardSize,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(guardSize / 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  'assets/red.png',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '${guard.id}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        // Player
-                        AnimatedPositioned(
-                          duration: const Duration(milliseconds: 200),
-                          left: playerPosition.dx - playerSize / 2,
-                          top: playerPosition.dy - playerSize / 2,
-                          child: Container(
-                            width: playerMoving ? playerSize + 4 : playerSize,
-                            height: playerMoving ? playerSize + 4 : playerSize,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(playerSize / 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: playerCaught 
-                                      ? Colors.orange.withOpacity(0.6)
-                                      : returningHome 
-                                          ? Colors.green.withOpacity(0.6)
-                                          : Colors.blue.withOpacity(0.6),
-                                  blurRadius: playerMoving ? 8 : 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: playerCaught || returningHome 
-                                  ? ColorFiltered(
-                                      colorFilter: playerCaught
-                                          ? const ColorFilter.mode(Colors.orange, BlendMode.modulate)
-                                          : const ColorFilter.mode(Colors.green, BlendMode.modulate),
-                                      child: Image.asset(
-                                        'assets/blue.png',
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              color: playerCaught 
-                                                  ? Colors.orange 
-                                                  : returningHome 
-                                                      ? Colors.green 
-                                                      : Colors.blue,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Center(
-                                              child: Icon(
-                                                Icons.person,
-                                                color: Colors.white,
-                                                size: 16,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    )
-                                  : Image.asset(
-                                      'assets/blue.png',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          decoration: const BoxDecoration(
-                                            color: Colors.blue,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.person,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                child: Stack(
+                  children: [
+                    // Field background with lines
+                    CustomPaint(
+                      painter: GameFieldPainter(),
+                      size: Size(fieldWidth, fieldHeight),
+                    ),
+                    // Particles
+                    CustomPaint(
+                      painter: ParticlePainter(
+                        particles: particles,
+                        trailParticles: trailParticles,
+                      ),
+                      size: Size(fieldWidth, fieldHeight),
+                    ),
+                    // Guards
+                    AnimatedBuilder(
+                      animation: _guardController,
+                      builder: (context, child) {
+                        return Stack(
+                          children: guards.map((guard) {
+                            Offset pos = guard.getCurrentPosition();
+                            return Positioned(
+                              left: pos.dx - guardSize / 2,
+                              top: pos.dy - guardSize / 2,
+                              child: Container(
+                                width: guardSize,
+                                height: guardSize,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(guardSize / 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${guard.id}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                    // Player
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 50),
+                      left: playerPosition.dx - playerSize / 2,
+                      top: playerPosition.dy - playerSize / 2,
+                      child: Container(
+                        width: playerMoving ? playerSize + 4 : playerSize,
+                        height: playerMoving ? playerSize + 4 : playerSize,
+                        decoration: BoxDecoration(
+                          color: playerCaught 
+                              ? Colors.orange
+                              : returningHome 
+                                  ? Colors.green 
+                                  : Colors.blue,
+                          borderRadius: BorderRadius.circular(playerSize / 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: playerCaught 
+                                  ? Colors.orange.withOpacity(0.6)
+                                  : returningHome 
+                                      ? Colors.green.withOpacity(0.6)
+                                      : Colors.blue.withOpacity(0.6),
+                              blurRadius: playerMoving ? 8 : 4,
+                              offset: const Offset(0, 2),
                             ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 16,
                           ),
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -604,7 +580,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     child: Text(gameOver ? 'Main Lagi' : 'Mulai Game'),
                   ),
                 
-                if (gameStarted) ...[
+                if (gameStarted && !gameOver) ...[
                   // Virtual Joystick
                   Expanded(
                     child: Center(
@@ -618,7 +594,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                             // Adjust for joystick area position
                             localPosition = localPosition - Offset(
                               (MediaQuery.of(context).size.width - joystickRadius * 2.5) / 2,
-                              MediaQuery.of(context).size.height - 180 + 20 + 60, // Adjust for container positions
+                              MediaQuery.of(context).size.height - 180 + 20 + 60,
                             );
                             _updateJoystick(localPosition);
                           },
@@ -784,10 +760,23 @@ class GameFieldPainter extends CustomPainter {
       );
     }
     
-    // Vertical line
+    // Vertical center line
     canvas.drawLine(
       Offset(size.width / 2, 100),
       Offset(size.width / 2, 340),
+      paint,
+    );
+    
+    // Left and right boundary lines
+    canvas.drawLine(
+      Offset(20, 80), // Start from finish area
+      Offset(20, size.height - 80), // End at start area
+      paint,
+    );
+    
+    canvas.drawLine(
+      Offset(size.width - 20, 80), // Start from finish area
+      Offset(size.width - 20, size.height - 80), // End at start area
       paint,
     );
     
@@ -854,6 +843,15 @@ class GameFieldPainter extends CustomPainter {
   }
 }
 
+// Particle shapes
+enum ParticleShape {
+  circle,
+  square,
+  diamond,
+  star,
+  triangle,
+}
+
 // Particle class
 class Particle {
   Offset position;
@@ -862,6 +860,9 @@ class Particle {
   int maxLife;
   Color color;
   double size;
+  ParticleShape shape;
+  double rotation;
+  double rotationSpeed;
   
   Particle({
     required this.position,
@@ -870,11 +871,15 @@ class Particle {
     required this.maxLife,
     required this.color,
     required this.size,
+    this.shape = ParticleShape.circle,
+    this.rotation = 0,
+    this.rotationSpeed = 0,
   });
   
   void update() {
     position += velocity;
     velocity *= 0.98; // Friction
+    rotation += rotationSpeed;
     life--;
   }
   
@@ -899,23 +904,90 @@ class ParticlePainter extends CustomPainter {
     
     // Draw trail particles
     for (Particle particle in trailParticles) {
-      paint.color = particle.color.withOpacity(particle.opacity * 0.5);
-      canvas.drawCircle(
-        particle.position,
-        particle.size * particle.opacity,
-        paint,
-      );
+      paint.color = particle.color.withOpacity(particle.opacity * 0.4);
+      _drawParticle(canvas, paint, particle, true);
     }
     
-    // Draw main particles
+    // Draw main particles with glow effect
     for (Particle particle in particles) {
+      // Draw glow
+      paint.color = particle.color.withOpacity(particle.opacity * 0.3);
+      paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      _drawParticle(canvas, paint, particle, false);
+      
+      // Draw main particle
+      paint.maskFilter = null;
       paint.color = particle.color.withOpacity(particle.opacity);
-      canvas.drawCircle(
-        particle.position,
-        particle.size * particle.opacity,
-        paint,
-      );
+      _drawParticle(canvas, paint, particle, false);
     }
+  }
+  
+  void _drawParticle(Canvas canvas, Paint paint, Particle particle, bool isTrail) {
+    canvas.save();
+    canvas.translate(particle.position.dx, particle.position.dy);
+    canvas.rotate(particle.rotation);
+    
+    double currentSize = particle.size * particle.opacity;
+    if (isTrail) currentSize *= 0.7;
+    
+    switch (particle.shape) {
+      case ParticleShape.circle:
+        canvas.drawCircle(Offset.zero, currentSize, paint);
+        break;
+      case ParticleShape.square:
+        canvas.drawRect(
+          Rect.fromCenter(center: Offset.zero, width: currentSize * 2, height: currentSize * 2),
+          paint,
+        );
+        break;
+      case ParticleShape.diamond:
+        _drawDiamond(canvas, paint, currentSize);
+        break;
+      case ParticleShape.star:
+        _drawStar(canvas, paint, currentSize);
+        break;
+      case ParticleShape.triangle:
+        _drawTriangle(canvas, paint, currentSize);
+        break;
+    }
+    
+    canvas.restore();
+  }
+  
+  void _drawDiamond(Canvas canvas, Paint paint, double size) {
+    Path path = Path();
+    path.moveTo(0, -size);
+    path.lineTo(size, 0);
+    path.lineTo(0, size);
+    path.lineTo(-size, 0);
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+  
+  void _drawStar(Canvas canvas, Paint paint, double size) {
+    Path path = Path();
+    for (int i = 0; i < 10; i++) {
+      double angle = (i * pi) / 5;
+      double radius = (i % 2 == 0) ? size : size * 0.5;
+      double x = cos(angle) * radius;
+      double y = sin(angle) * radius;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+  
+  void _drawTriangle(Canvas canvas, Paint paint, double size) {
+    Path path = Path();
+    path.moveTo(0, -size);
+    path.lineTo(size * 0.866, size * 0.5);
+    path.lineTo(-size * 0.866, size * 0.5);
+    path.close();
+    canvas.drawPath(path, paint);
   }
   
   @override

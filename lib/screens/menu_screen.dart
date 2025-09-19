@@ -228,7 +228,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
               border: Border.all(color: Colors.white.withOpacity(0.3)),
             ),
             child: Text(
-              GameTexts.appSubtitle + ' • 2 Players',
+              GameTexts.appSubtitle,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white.withOpacity(0.9),

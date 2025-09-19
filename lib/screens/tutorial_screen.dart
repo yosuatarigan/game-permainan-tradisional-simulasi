@@ -259,7 +259,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   decoration: BoxDecoration(
                     color: Colors.green[100],
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black, width: 3),
+                    border: Border.all(color: Colors.red, width: 3),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -277,28 +277,28 @@ class _TutorialScreenState extends State<TutorialScreen> {
                           left: 0,
                           top: 70,
                           right: 0,
-                          child: Container(height: 3, color: Colors.black),
+                          child: Container(height: 3, color: Colors.red),
                         ),
 
                         Positioned(
                           left: 0,
                           top: 140,
                           right: 0,
-                          child: Container(height: 3, color: Colors.black),
+                          child: Container(height: 3, color: Colors.red),
                         ),
 
                         Positioned(
                           left: 0,
                           top: 210,
                           right: 0,
-                          child: Container(height: 3, color: Colors.black),
+                          child: Container(height: 3, color: Colors.red),
                         ),
 
                         Positioned(
                           left: 0,
                           top: 280,
                           right: 0,
-                          child: Container(height: 3, color: Colors.black),
+                          child: Container(height: 3, color: Colors.red),
                         ),
 
                         // Garis vertikal tengah untuk penjaga 5
@@ -307,7 +307,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                           top: 70,
                           width: 3,
                           height: 210, // Dari garis 1 sampai garis 4
-                          child: Container(color: Colors.red),
+                          child: Container(color: Colors.black),
                         ),
 
                         // Penjaga dots dan labels
