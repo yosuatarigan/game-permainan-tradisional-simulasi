@@ -1,6 +1,7 @@
 // File: lib/screens/menu_screen.dart - Updated with Game Navigation
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:game_permainan_tradisional_simulasi/gobaksodor/gobak_sodor_game.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/setting_screen.dart';
 import 'package:game_permainan_tradisional_simulasi/screens/tutorial_screen.dart';
 import '../utils/game_constants.dart';
@@ -446,7 +447,7 @@ class _MenuScreenState extends State<MenuScreen> with TickerProviderStateMixin {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const HadangGameScreen(),
+        builder: (context) => const GobakSodorGame(),
       ),
     );
   }
