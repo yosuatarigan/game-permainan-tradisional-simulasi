@@ -22,7 +22,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   bool gameStarted = false;
   bool gameOver = false;
   bool playerCaught = false;
-  bool playerCompleted = false; // Track if current player completed
+  bool playerCompleted = false;
   String gameMessage = '';
   
   // Player position
@@ -35,12 +35,13 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   // Guards positions and directions
   List<Guard> guards = [];
   
-  // Joystick
-  Offset joystickCenter = const Offset(80, 80);
-  Offset knobPosition = const Offset(80, 80);
+  // Joystick - FIXED
+  Offset joystickPosition = Offset.zero;
+  Offset knobPosition = Offset.zero;
   bool joystickActive = false;
-  final double joystickRadius = 50;
-  final double knobRadius = 20;
+  final double joystickRadius = 60;
+  final double knobRadius = 25;
+  final GlobalKey joystickKey = GlobalKey();
   
   // Particles
   List<Particle> particles = [];
@@ -57,6 +58,14 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   void initState() {
     super.initState();
     _initializeGame();
+    
+    // Initialize joystick position
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        joystickPosition = Offset(joystickRadius + 20, joystickRadius + 20);
+        knobPosition = joystickPosition;
+      });
+    });
   }
   
   void _initializeGame() {
@@ -153,40 +162,58 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     });
   }
   
-  void _updateJoystick(Offset localPosition) {
+  // FIXED JOYSTICK METHODS
+  void _handleJoystickStart(Offset globalPosition) {
     if (!gameStarted || gameOver || playerCaught || playerCompleted) return;
     
-    Offset delta = localPosition - joystickCenter;
-    double distance = delta.distance;
-    
-    if (distance <= joystickRadius) {
-      setState(() {
-        knobPosition = localPosition;
-        joystickActive = distance > 5; // Dead zone
-        
-        if (joystickActive) {
-          // Calculate velocity based on joystick position
-          double normalizedDistance = (distance / joystickRadius).clamp(0.0, 1.0);
-          Offset direction = delta / distance;
-          playerVelocity = direction * maxSpeed * normalizedDistance;
-        } else {
-          playerVelocity = Offset.zero;
-        }
-      });
-    } else {
-      // Clamp to joystick boundary
-      Offset direction = delta / distance;
-      setState(() {
-        knobPosition = joystickCenter + direction * joystickRadius;
-        joystickActive = true;
-        playerVelocity = direction * maxSpeed;
-      });
+    final RenderBox? renderBox = joystickKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final localPosition = renderBox.globalToLocal(globalPosition);
+      _updateJoystick(localPosition);
     }
+  }
+  
+  void _handleJoystickUpdate(Offset globalPosition) {
+    if (!gameStarted || gameOver || playerCaught || playerCompleted) return;
+    
+    final RenderBox? renderBox = joystickKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final localPosition = renderBox.globalToLocal(globalPosition);
+      _updateJoystick(localPosition);
+    }
+  }
+  
+  void _updateJoystick(Offset localPosition) {
+    final center = Offset(joystickRadius + 20, joystickRadius + 20);
+    final delta = localPosition - center;
+    final distance = delta.distance;
+    
+    setState(() {
+      if (distance <= joystickRadius) {
+        knobPosition = localPosition;
+        joystickActive = distance > 8; // Dead zone
+      } else {
+        // Clamp to boundary
+        final direction = delta / distance;
+        knobPosition = center + direction * joystickRadius;
+        joystickActive = true;
+      }
+      
+      if (joystickActive) {
+        final clampedDistance = distance.clamp(0.0, joystickRadius);
+        final normalizedDistance = clampedDistance / joystickRadius;
+        final direction = delta / (distance == 0 ? 1 : distance);
+        
+        playerVelocity = direction * maxSpeed * normalizedDistance;
+      } else {
+        playerVelocity = Offset.zero;
+      }
+    });
   }
   
   void _stopJoystick() {
     setState(() {
-      knobPosition = joystickCenter;
+      knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
       joystickActive = false;
       playerVelocity = Offset.zero;
     });
@@ -308,7 +335,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       gameMessage = 'Pemain $currentPlayer Tertangkap! Gagal.';
       playerVelocity = Offset.zero;
       joystickActive = false;
-      knobPosition = joystickCenter;
+      knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
     });
     
     _addExplosionParticles();
@@ -331,7 +358,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       gameMessage = 'Pemain $currentPlayer Berhasil! (+1 Poin)';
       playerVelocity = Offset.zero;
       joystickActive = false;
-      knobPosition = joystickCenter;
+      knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
     });
     
     _addVictoryParticles();
@@ -366,7 +393,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         gameMessage = 'Pemain $currentPlayer - Menuju Finish';
         playerVelocity = Offset.zero;
         joystickActive = false;
-        knobPosition = joystickCenter;
+        knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
         // Clear particles
         particles.clear();
         trailParticles.clear();
@@ -556,9 +583,9 @@ class _GobakSodorGameState extends State<GobakSodorGame>
             ),
           ),
           
-          // Controls with Virtual Joystick
+          // Controls with FIXED Virtual Joystick
           Container(
-            height: 180,
+            height: 200,
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
@@ -581,45 +608,33 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                   ),
                 
                 if (gameStarted && !gameOver) ...[
-                  // Virtual Joystick
+                  // FIXED Virtual Joystick
                   Expanded(
                     child: Center(
-                      child: Container(
-                        width: joystickRadius * 2.5,
-                        height: joystickRadius * 2.5,
+                      child: SizedBox(
+                        key: joystickKey,
+                        width: (joystickRadius + 20) * 2,
+                        height: (joystickRadius + 20) * 2,
                         child: GestureDetector(
-                          onPanStart: (details) {
-                            RenderBox box = context.findRenderObject() as RenderBox;
-                            Offset localPosition = box.globalToLocal(details.globalPosition);
-                            // Adjust for joystick area position
-                            localPosition = localPosition - Offset(
-                              (MediaQuery.of(context).size.width - joystickRadius * 2.5) / 2,
-                              MediaQuery.of(context).size.height - 180 + 20 + 60,
-                            );
-                            _updateJoystick(localPosition);
-                          },
-                          onPanUpdate: (details) {
-                            RenderBox box = context.findRenderObject() as RenderBox;
-                            Offset localPosition = box.globalToLocal(details.globalPosition);
-                            // Adjust for joystick area position
-                            localPosition = localPosition - Offset(
-                              (MediaQuery.of(context).size.width - joystickRadius * 2.5) / 2,
-                              MediaQuery.of(context).size.height - 180 + 20 + 60,
-                            );
-                            _updateJoystick(localPosition);
-                          },
-                          onPanEnd: (details) {
-                            _stopJoystick();
-                          },
-                          child: CustomPaint(
-                            painter: JoystickPainter(
-                              center: joystickCenter,
-                              knobPosition: knobPosition,
-                              joystickRadius: joystickRadius,
-                              knobRadius: knobRadius,
-                              isActive: joystickActive,
+                          onPanStart: (details) => _handleJoystickStart(details.globalPosition),
+                          onPanUpdate: (details) => _handleJoystickUpdate(details.globalPosition),
+                          onPanEnd: (details) => _stopJoystick(),
+                          onTapDown: (details) => _handleJoystickStart(details.globalPosition),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black12,
+                              borderRadius: BorderRadius.circular((joystickRadius + 20)),
                             ),
-                            size: Size(joystickRadius * 2.5, joystickRadius * 2.5),
+                            child: CustomPaint(
+                              painter: JoystickPainter(
+                                center: Offset(joystickRadius + 20, joystickRadius + 20),
+                                knobPosition: knobPosition,
+                                joystickRadius: joystickRadius,
+                                knobRadius: knobRadius,
+                                isActive: joystickActive,
+                              ),
+                              size: Size((joystickRadius + 20) * 2, (joystickRadius + 20) * 2),
+                            ),
                           ),
                         ),
                       ),
@@ -627,11 +642,15 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                   ),
                   
                   // Instructions
-                  const Text(
-                    'Drag joystick untuk bergerak',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Sentuh dan geser joystick untuk bergerak',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -996,7 +1015,7 @@ class ParticlePainter extends CustomPainter {
   }
 }
 
-// Joystick painter
+// FIXED Joystick painter
 class JoystickPainter extends CustomPainter {
   final Offset center;
   final Offset knobPosition;
@@ -1016,27 +1035,47 @@ class JoystickPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     
+    // Draw joystick outer ring
+    paint.color = Colors.white.withOpacity(0.3);
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 4;
+    canvas.drawCircle(center, joystickRadius, paint);
+    
     // Draw joystick base
     paint.color = Colors.white.withOpacity(0.1);
     paint.style = PaintingStyle.fill;
     canvas.drawCircle(center, joystickRadius, paint);
     
-    paint.color = Colors.white.withOpacity(0.3);
-    paint.style = PaintingStyle.stroke;
-    paint.strokeWidth = 2;
-    canvas.drawCircle(center, joystickRadius, paint);
+    // Draw direction indicator line if active
+    if (isActive) {
+      paint.color = Colors.blue.withOpacity(0.4);
+      paint.strokeWidth = 3;
+      paint.style = PaintingStyle.stroke;
+      canvas.drawLine(center, knobPosition, paint);
+    }
+    
+    // Draw knob shadow
+    paint.color = Colors.black.withOpacity(0.2);
+    paint.style = PaintingStyle.fill;
+    canvas.drawCircle(knobPosition + const Offset(2, 2), knobRadius, paint);
     
     // Draw knob
     paint.style = PaintingStyle.fill;
     paint.color = isActive 
-        ? Colors.blue.withOpacity(0.8)
-        : Colors.white.withOpacity(0.6);
+        ? const Color(0xFF2196F3) 
+        : Colors.white.withOpacity(0.8);
     canvas.drawCircle(knobPosition, knobRadius, paint);
     
-    paint.color = Colors.white;
+    // Draw knob border
+    paint.color = isActive ? Colors.white : Colors.grey[400]!;
     paint.style = PaintingStyle.stroke;
-    paint.strokeWidth = 2;
+    paint.strokeWidth = 3;
     canvas.drawCircle(knobPosition, knobRadius, paint);
+    
+    // Draw center dot on knob
+    paint.color = isActive ? Colors.white : Colors.grey[600]!;
+    paint.style = PaintingStyle.fill;
+    canvas.drawCircle(knobPosition, 4, paint);
   }
   
   @override

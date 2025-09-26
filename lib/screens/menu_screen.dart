@@ -6,7 +6,6 @@ import 'package:game_permainan_tradisional_simulasi/screens/setting_screen.dart'
 import 'package:game_permainan_tradisional_simulasi/screens/tutorial_screen.dart';
 import '../utils/game_constants.dart';
 import '../services/local_storage_service.dart';
-import '../game/hadang_game_screen.dart'; // Import game screen
 import 'statistics_screen.dart';
 import 'about_screen.dart';
 

@@ -22,32 +22,52 @@ class JoystickWidget extends StatefulWidget {
 }
 
 class _JoystickWidgetState extends State<JoystickWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   
   Offset _knobPosition = Offset.zero;
   bool _isDragging = false;
-  late AnimationController _animationController;
+  double _currentDistance = 0.0;
+  
+  late AnimationController _pressAnimationController;
+  late AnimationController _pulseAnimationController;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+    
+    _pressAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 100),
       vsync: this,
     );
+    
+    _pulseAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+    
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 1.1,
+      end: 0.95,
     ).animate(CurvedAnimation(
-      parent: _animationController,
+      parent: _pressAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _pulseAnimationController,
       curve: Curves.easeInOut,
     ));
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pressAnimationController.dispose();
+    _pulseAnimationController.dispose();
     super.dispose();
   }
 
@@ -57,8 +77,8 @@ class _JoystickWidgetState extends State<JoystickWidget>
     setState(() {
       _isDragging = true;
     });
-    _animationController.forward();
-    HapticFeedback.lightImpact();
+    _pressAnimationController.forward();
+    HapticFeedback.selectionClick();
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
@@ -71,9 +91,13 @@ class _JoystickWidgetState extends State<JoystickWidget>
     // Calculate knob position relative to center
     Offset delta = localPosition - center;
     final distance = delta.distance;
-    final maxDistance = widget.size / 2 - 15; // Keep knob inside boundary
+    final maxDistance = (widget.size / 2) - 20;
 
-    // Limit knob movement to joystick boundary
+    setState(() {
+      _currentDistance = distance;
+    });
+
+    // Limit knob movement to joystick boundary with smooth resistance
     if (distance > maxDistance) {
       delta = delta / distance * maxDistance;
     }
@@ -89,6 +113,11 @@ class _JoystickWidgetState extends State<JoystickWidget>
     );
 
     widget.onMove(normalizedMovement);
+    
+    // Haptic feedback based on distance
+    if (distance > maxDistance * 0.8) {
+      HapticFeedback.lightImpact();
+    }
   }
 
   void _onPanEnd(DragEndDetails details) {
@@ -97,19 +126,21 @@ class _JoystickWidgetState extends State<JoystickWidget>
     setState(() {
       _knobPosition = Offset.zero;
       _isDragging = false;
+      _currentDistance = 0.0;
     });
-    _animationController.reverse();
+    _pressAnimationController.reverse();
     
-    // Stop player movement
     widget.onMove(Offset.zero);
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
   }
+
+  double get _intensity => (_currentDistance / (widget.size / 2)).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: AnimatedBuilder(
-        animation: _scaleAnimation,
+        animation: Listenable.merge([_scaleAnimation, _pulseAnimation]),
         builder: (context, child) {
           return Transform.scale(
             scale: _scaleAnimation.value,
@@ -122,109 +153,119 @@ class _JoystickWidgetState extends State<JoystickWidget>
                 height: widget.size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.color.withOpacity(0.05), // More transparent
+                  gradient: RadialGradient(
+                    colors: [
+                      widget.color.withOpacity(0.05),
+                      widget.color.withOpacity(0.02),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.6, 0.8, 1.0],
+                  ),
                   border: Border.all(
-                    color: widget.color.withOpacity(widget.isEnabled ? 0.3 : 0.15),
-                    width: 3,
+                    color: widget.color.withOpacity(
+                      widget.isEnabled ? (_isDragging ? 0.6 : 0.3) : 0.15
+                    ),
+                    width: _isDragging ? 3 : 2,
                   ),
                   boxShadow: [
                     if (_isDragging)
                       BoxShadow(
-                        color: widget.color.withOpacity(0.2), // More subtle shadow
-                        blurRadius: 12,
+                        color: widget.color.withOpacity(0.3),
+                        blurRadius: 15,
                         offset: const Offset(0, 4),
                       ),
                   ],
                 ),
                 child: Stack(
                   children: [
-                    // Joystick base circles with better visibility
-                    Center(
-                      child: Container(
-                        width: widget.size * 0.8,
-                        height: widget.size * 0.8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: widget.color.withOpacity(0.03), // More transparent
-                          border: Border.all(
-                            color: widget.color.withOpacity(0.2),
-                            width: 2,
+                    // Animated pulse ring when not active
+                    if (!_isDragging && widget.isEnabled)
+                      Center(
+                        child: Transform.scale(
+                          scale: _pulseAnimation.value,
+                          child: Container(
+                            width: widget.size * 0.7,
+                            height: widget.size * 0.7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: widget.color.withOpacity(0.1),
+                                width: 1,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     
-                    // Inner guidance circle
+                    // Intensity rings that appear based on pressure
+                    if (_isDragging) ...[
+                      _buildIntensityRing(0.3, 0.1),
+                      _buildIntensityRing(0.5, 0.15),
+                      _buildIntensityRing(0.7, 0.2),
+                    ],
+                    
+                    // Center reference dot
                     Center(
                       child: Container(
-                        width: widget.size * 0.5,
-                        height: widget.size * 0.5,
+                        width: 4,
+                        height: 4,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.transparent,
-                          border: Border.all(
-                            color: widget.color.withOpacity(0.15), // More transparent
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Directional indicators with better feedback
-                    _buildDirectionIndicator(0, -widget.size / 3, Icons.keyboard_arrow_up, 'UP'),
-                    _buildDirectionIndicator(0, widget.size / 3, Icons.keyboard_arrow_down, 'DOWN'),
-                    _buildDirectionIndicator(-widget.size / 3, 0, Icons.keyboard_arrow_left, 'LEFT'),
-                    _buildDirectionIndicator(widget.size / 3, 0, Icons.keyboard_arrow_right, 'RIGHT'),
-                    
-                    // Center dot for reference
-                    Center(
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.4), // More transparent
+                          color: widget.color.withOpacity(0.5),
                           shape: BoxShape.circle,
                         ),
                       ),
                     ),
                     
-                    // Movable knob with enhanced design
+                    // Main knob with improved design
                     AnimatedPositioned(
                       duration: _isDragging 
                           ? Duration.zero 
-                          : const Duration(milliseconds: 300),
-                      curve: Curves.elasticOut,
-                      left: (widget.size / 2) + _knobPosition.dx - 18,
-                      top: (widget.size / 2) + _knobPosition.dy - 18,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              widget.color,
-                              widget.color.withOpacity(0.8),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.color.withOpacity(0.4),
-                              blurRadius: _isDragging ? 12 : 6,
-                              offset:  Offset(0, _isDragging ? 4 : 2),
+                          : const Duration(milliseconds: 200),
+                      curve: Curves.easeOutBack,
+                      left: (widget.size / 2) + _knobPosition.dx - 20,
+                      top: (widget.size / 2) + _knobPosition.dy - 20,
+                      child: Transform.scale(
+                        scale: 1.0 + (_intensity * 0.1),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                widget.color.withOpacity(0.9),
+                                widget.color,
+                              ],
+                              stops: const [0.3, 1.0],
                             ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.control_camera,
-                          color: Colors.white,
-                          size: 18,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.color.withOpacity(_isDragging ? 0.5 : 0.3),
+                                blurRadius: _isDragging ? 10 : 6,
+                                offset: Offset(0, _isDragging ? 3 : 2),
+                              ),
+                              // Inner glow
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.3),
+                                blurRadius: 3,
+                                offset: const Offset(0, -1),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.8),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -236,13 +277,13 @@ class _JoystickWidgetState extends State<JoystickWidget>
                         height: widget.size,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.grey.withOpacity(0.3), // More transparent
+                          color: Colors.grey.withOpacity(0.4),
                         ),
                         child: const Center(
                           child: Icon(
                             Icons.pause,
                             color: Colors.white,
-                            size: 24,
+                            size: 28,
                           ),
                         ),
                       ),
@@ -256,48 +297,24 @@ class _JoystickWidgetState extends State<JoystickWidget>
     );
   }
 
-  Widget _buildDirectionIndicator(double dx, double dy, IconData icon, String direction) {
-    final isActive = _isDragging && _isInDirection(dx, dy);
-    final opacity = isActive ? 0.9 : 0.3;
-    
-    return Positioned(
-      left: (widget.size / 2) + dx - 12,
-      top: (widget.size / 2) + dy - 12,
+  Widget _buildIntensityRing(double threshold, double opacity) {
+    final shouldShow = _intensity >= threshold;
+    return Center(
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
-        opacity: opacity,
-        child: AnimatedScale(
-          scale: isActive ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.color.withOpacity(isActive ? 0.6 : 0.1), // More transparent
-              border: Border.all(
-                color: widget.color.withOpacity(isActive ? 1.0 : 0.3),
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.white : widget.color.withOpacity(0.7),
-              size: 16,
+        opacity: shouldShow ? opacity : 0,
+        child: Container(
+          width: widget.size * (0.4 + threshold * 0.4),
+          height: widget.size * (0.4 + threshold * 0.4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.color,
+              width: 1,
             ),
           ),
         ),
       ),
     );
-  }
-
-  bool _isInDirection(double dx, double dy) {
-    if (!_isDragging || _knobPosition.distance < 10) return false;
-    
-    final angle = atan2(_knobPosition.dy, _knobPosition.dx);
-    final targetAngle = atan2(dy, dx);
-    final angleDiff = (angle - targetAngle).abs();
-    
-    return angleDiff < pi / 4 || angleDiff > 7 * pi / 4;
   }
 }
