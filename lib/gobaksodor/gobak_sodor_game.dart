@@ -31,6 +31,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   bool playerMoving = false;
   bool returningHome = false;
   bool hasReachedFinish = false;
+  bool hasFinishPoint = false; // NEW: Track if player got finish point
   
   // Guards positions and directions
   List<Guard> guards = [];
@@ -131,12 +132,18 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _checkGameState() {
-    // Check if reached finish line (top area)
+    // Check if reached finish line (top area) - UPDATED SCORING
     if (!hasReachedFinish && playerPosition.dy <= 90) {
       hasReachedFinish = true;
       returningHome = true;
-      gameMessage = 'Pemain $currentPlayer - Kembali ke Start!';
-      _addSuccessParticles();
+      
+      // Give 1 point for reaching finish
+      if (!hasFinishPoint) {
+        hasFinishPoint = true;
+        totalScore++;
+        gameMessage = 'Pemain $currentPlayer - Mencapai Finish! (+1 Poin) - Kembali ke Start!';
+        _addSuccessParticles();
+      }
     }
     
     // Check if returned home successfully
@@ -156,6 +163,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       playerPosition = const Offset(200, 460);
       returningHome = false;
       hasReachedFinish = false;
+      hasFinishPoint = false; // Reset finish point flag
       playerCaught = false;
       playerCompleted = false;
       gameMessage = 'Pemain 1 - Menuju Finish';
@@ -354,8 +362,8 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     setState(() {
       playerCompleted = true;
       playersCompleted++;
-      totalScore++;
-      gameMessage = 'Pemain $currentPlayer Berhasil! (+1 Poin)';
+      totalScore++; // Give 1 more point for returning to start
+      gameMessage = 'Pemain $currentPlayer Berhasil Pulang! (+1 Poin) Total: 2 Poin';
       playerVelocity = Offset.zero;
       joystickActive = false;
       knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
@@ -378,7 +386,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       setState(() {
         gameOver = true;
         gameStarted = false;
-        gameMessage = 'Game Selesai! Skor: $totalScore/5';
+        gameMessage = 'Game Selesai! Skor: $totalScore/10';
       });
       _addVictoryParticles();
     } else {
@@ -390,6 +398,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         playerPosition = const Offset(200, 460);
         returningHome = false;
         hasReachedFinish = false;
+        hasFinishPoint = false; // Reset finish point flag for new player
         gameMessage = 'Pemain $currentPlayer - Menuju Finish';
         playerVelocity = Offset.zero;
         joystickActive = false;
@@ -439,7 +448,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     _buildStatusCard('Pemain', '$currentPlayer/5'),
                     _buildStatusCard('Berhasil', '$playersCompleted'),
                     _buildStatusCard('Gagal', '$playersFailed'),
-                    _buildStatusCard('Skor', '$totalScore/5'),
+                    _buildStatusCard('Skor', '$totalScore/10'), // Updated max score
                   ],
                 ),
                 if (gameMessage.isNotEmpty) ...[
@@ -660,9 +669,9 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: totalScore >= 3 
+                      color: totalScore >= 6 
                           ? const Color(0xFF4caf50) 
-                          : totalScore >= 1 
+                          : totalScore >= 3 
                               ? Colors.orange 
                               : Colors.red,
                       borderRadius: BorderRadius.circular(8),
@@ -670,13 +679,13 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     child: Column(
                       children: [
                         Text(
-                          totalScore == 5 
-                              ? '🏆 PERFECT! Semua pemain lolos!'
-                              : totalScore >= 3 
-                                  ? '🎉 Bagus! $totalScore dari 5 pemain berhasil!'
-                                  : totalScore >= 1 
-                                      ? '👍 Lumayan! $totalScore dari 5 pemain berhasil!'
-                                      : '😔 Coba lagi! Tidak ada yang berhasil.',
+                          totalScore == 10 
+                              ? '🏆 PERFECT! Semua pemain bolak-balik!'
+                              : totalScore >= 6 
+                                  ? '🎉 Bagus! $totalScore dari 10 poin berhasil!'
+                                  : totalScore >= 3 
+                                      ? '👍 Lumayan! $totalScore dari 10 poin berhasil!'
+                                      : '😔 Coba lagi! Skor: $totalScore dari 10.',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -686,7 +695,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Skor Akhir: $totalScore/5',
+                          'Skor Akhir: $totalScore/10',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
