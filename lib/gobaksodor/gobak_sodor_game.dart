@@ -131,8 +131,16 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _checkGameState() {
-    // Check if reached finish line (top area) - langsung selesai!
-    if (!playerCompleted && playerPosition.dy <= 90) {
+    // Check if reached finish line (top area)
+    if (!hasReachedFinish && playerPosition.dy <= 90) {
+      hasReachedFinish = true;
+      returningHome = true;
+      gameMessage = 'Pemain $currentPlayer - Kembali ke Start!';
+      _addSuccessParticles();
+    }
+    
+    // Check if returned home successfully
+    if (hasReachedFinish && returningHome && playerPosition.dy >= 420) {
       _playerCompletedRound();
     }
   }
@@ -146,9 +154,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       playersFailed = 0;
       totalScore = 0;
       playerPosition = const Offset(200, 460);
+      returningHome = false;
+      hasReachedFinish = false;
       playerCaught = false;
       playerCompleted = false;
-      gameMessage = 'Pemain 1 - Capai Garis Finish!';
+      gameMessage = 'Pemain 1 - Menuju Finish';
     });
   }
   
@@ -345,17 +355,16 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       playerCompleted = true;
       playersCompleted++;
       totalScore++;
-      gameMessage = 'Pemain $currentPlayer Berhasil Sampai Finish! (+1 Poin)';
+      gameMessage = 'Pemain $currentPlayer Berhasil! (+1 Poin)';
       playerVelocity = Offset.zero;
       joystickActive = false;
       knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
     });
     
-    _addSuccessParticles();
     _addVictoryParticles();
     
     // Show success message then move to next player
-    Future.delayed(const Duration(milliseconds: 2000), () {
+    Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         _nextPlayer();
       }
@@ -379,7 +388,9 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         playerCaught = false;
         playerCompleted = false;
         playerPosition = const Offset(200, 460);
-        gameMessage = 'Pemain $currentPlayer - Capai Garis Finish!';
+        returningHome = false;
+        hasReachedFinish = false;
+        gameMessage = 'Pemain $currentPlayer - Menuju Finish';
         playerVelocity = Offset.zero;
         joystickActive = false;
         knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
@@ -438,14 +449,14 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     decoration: BoxDecoration(
                       color: playerCaught 
                           ? Colors.red.withOpacity(0.2)
-                          : playerCompleted 
+                          : hasReachedFinish 
                               ? Colors.green.withOpacity(0.2)
                               : Colors.blue.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: playerCaught 
                             ? Colors.red 
-                            : playerCompleted 
+                            : hasReachedFinish 
                                 ? Colors.green 
                                 : Colors.blue,
                       ),
@@ -541,7 +552,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                         decoration: BoxDecoration(
                           color: playerCaught 
                               ? Colors.orange
-                              : playerCompleted 
+                              : returningHome 
                                   ? Colors.green 
                                   : Colors.blue,
                           borderRadius: BorderRadius.circular(playerSize / 2),
@@ -549,7 +560,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                             BoxShadow(
                               color: playerCaught 
                                   ? Colors.orange.withOpacity(0.6)
-                                  : playerCompleted 
+                                  : returningHome 
                                       ? Colors.green.withOpacity(0.6)
                                       : Colors.blue.withOpacity(0.6),
                               blurRadius: playerMoving ? 8 : 4,

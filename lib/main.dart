@@ -67,7 +67,7 @@ class TraditionalGamesApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Permainan Tradisional Indonesia',
+      title: 'SAMOTRAD',
       theme: ThemeData(
         primarySwatch: Colors.green,
         primaryColor: GameColors.primaryGreen,
