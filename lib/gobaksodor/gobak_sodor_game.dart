@@ -40,8 +40,8 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   Offset joystickPosition = Offset.zero;
   Offset knobPosition = Offset.zero;
   bool joystickActive = false;
-  final double joystickRadius = 60;
-  final double knobRadius = 25;
+  final double joystickRadius = 45;
+  final double knobRadius = 18;
   final GlobalKey joystickKey = GlobalKey();
   
   // Particles
@@ -70,7 +70,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   
   void _initializeGame() {
     _guardController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 6000),
       vsync: this,
     )..repeat();
     
@@ -580,7 +580,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
           ),
           
           Container(
-            height: 200,
+            height: 120,
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
@@ -635,17 +635,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     ),
                   ),
                   
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Sentuh dan geser joystick untuk bergerak',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                
                 ],
                 
                 if (gameOver)
@@ -739,12 +729,21 @@ class Guard {
   
   Offset getCurrentPosition() {
     double progress = controller.value;
-    double movement = sin(progress * 2 * pi + id * 0.3) * (movementRange / 2);
+    // Gunakan sin untuk gerakan smooth bolak-balik
+    double movement = sin(progress * 2 * pi + id * 0.5);
     
     if (isHorizontal) {
-      return Offset(basePosition.dx + movement, basePosition.dy);
+      // Bergerak dari 40 (kiri) sampai 360 (kanan)
+      double minX = 40;
+      double maxX = 360;
+      double x = minX + (maxX - minX) * ((movement + 1) / 2);
+      return Offset(x, basePosition.dy);
     } else {
-      return Offset(basePosition.dx, basePosition.dy + movement);
+      // Bergerak vertikal
+      double minY = 120;
+      double maxY = 320;
+      double y = minY + (maxY - minY) * ((movement + 1) / 2);
+      return Offset(basePosition.dx, y);
     }
   }
 }
