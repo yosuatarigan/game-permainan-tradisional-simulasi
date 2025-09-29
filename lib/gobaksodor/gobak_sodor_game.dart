@@ -31,12 +31,12 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   bool playerMoving = false;
   bool returningHome = false;
   bool hasReachedFinish = false;
-  bool hasFinishPoint = false; // NEW: Track if player got finish point
+  bool hasFinishPoint = false;
   
   // Guards positions and directions
   List<Guard> guards = [];
   
-  // Joystick - FIXED
+  // Joystick
   Offset joystickPosition = Offset.zero;
   Offset knobPosition = Offset.zero;
   bool joystickActive = false;
@@ -51,8 +51,8 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   // Game settings
   final double fieldWidth = 400;
   final double fieldHeight = 500;
-  final double playerSize = 24;
-  final double guardSize = 24;
+  final double playerSize = 40;
+  final double guardSize = 40;
   final double maxSpeed = 3.0;
   
   @override
@@ -60,7 +60,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     super.initState();
     _initializeGame();
     
-    // Initialize joystick position
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         joystickPosition = Offset(joystickRadius + 20, joystickRadius + 20);
@@ -70,7 +69,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _initializeGame() {
-    // Animation controllers
     _guardController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -82,20 +80,18 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     );
     
     _particleController = AnimationController(
-      duration: const Duration(milliseconds: 16), // 60 FPS
+      duration: const Duration(milliseconds: 16),
       vsync: this,
     )..repeat();
     
-    // Listen to particle animation for game loop
     _particleController.addListener(_gameLoop);
     
-    // Initialize guards dengan posisi yang lebih akurat
     guards = [
-      Guard(1, const Offset(200, 100), true, 140, _guardController), // Horizontal guard 1
-      Guard(2, const Offset(200, 180), true, 140, _guardController), // Horizontal guard 2
-      Guard(3, const Offset(200, 260), true, 140, _guardController), // Horizontal guard 3
-      Guard(4, const Offset(200, 340), true, 140, _guardController), // Horizontal guard 4
-      Guard(5, const Offset(200, 220), false, 110, _guardController), // Vertical guard 5
+      Guard(1, const Offset(200, 100), true, 140, _guardController),
+      Guard(2, const Offset(200, 180), true, 140, _guardController),
+      Guard(3, const Offset(200, 260), true, 140, _guardController),
+      Guard(4, const Offset(200, 340), true, 140, _guardController),
+      Guard(5, const Offset(200, 220), false, 110, _guardController),
     ];
   }
   
@@ -103,7 +99,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     if (!gameStarted || gameOver || playerCaught || playerCompleted) return;
     
     setState(() {
-      // Update player position with velocity
       if (joystickActive) {
         double newX = (playerPosition.dx + playerVelocity.dx)
             .clamp(30, fieldWidth - 30);
@@ -112,7 +107,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         
         playerPosition = Offset(newX, newY);
         
-        // Add trail particles when moving
         if (playerVelocity.distance > 0.5) {
           _addTrailParticle();
         }
@@ -122,22 +116,17 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         playerMoving = false;
       }
       
-      // Check game state
       _checkGameState();
       _checkCollisions();
-      
-      // Update particles
       _updateParticles();
     });
   }
   
   void _checkGameState() {
-    // Check if reached finish line (top area) - UPDATED SCORING
     if (!hasReachedFinish && playerPosition.dy <= 90) {
       hasReachedFinish = true;
       returningHome = true;
       
-      // Give 1 point for reaching finish
       if (!hasFinishPoint) {
         hasFinishPoint = true;
         totalScore++;
@@ -146,7 +135,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       }
     }
     
-    // Check if returned home successfully
     if (hasReachedFinish && returningHome && playerPosition.dy >= 420) {
       _playerCompletedRound();
     }
@@ -163,14 +151,13 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       playerPosition = const Offset(200, 460);
       returningHome = false;
       hasReachedFinish = false;
-      hasFinishPoint = false; // Reset finish point flag
+      hasFinishPoint = false;
       playerCaught = false;
       playerCompleted = false;
       gameMessage = 'Pemain 1 - Menuju Finish';
     });
   }
   
-  // FIXED JOYSTICK METHODS
   void _handleJoystickStart(Offset globalPosition) {
     if (!gameStarted || gameOver || playerCaught || playerCompleted) return;
     
@@ -199,9 +186,8 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     setState(() {
       if (distance <= joystickRadius) {
         knobPosition = localPosition;
-        joystickActive = distance > 8; // Dead zone
+        joystickActive = distance > 8;
       } else {
-        // Clamp to boundary
         final direction = delta / distance;
         knobPosition = center + direction * joystickRadius;
         joystickActive = true;
@@ -227,7 +213,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     });
   }
   
-  // Particle Methods
   void _addTrailParticle() {
     if (trailParticles.length > 20) {
       trailParticles.removeAt(0);
@@ -335,7 +320,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _playerCaught() {
-    if (playerCaught || playerCompleted) return; // Prevent multiple calls
+    if (playerCaught || playerCompleted) return;
     
     setState(() {
       playerCaught = true;
@@ -348,7 +333,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     
     _addExplosionParticles();
     
-    // Show caught message then move to next player
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         _nextPlayer();
@@ -357,12 +341,12 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _playerCompletedRound() {
-    if (playerCaught || playerCompleted) return; // Prevent multiple calls
+    if (playerCaught || playerCompleted) return;
     
     setState(() {
       playerCompleted = true;
       playersCompleted++;
-      totalScore++; // Give 1 more point for returning to start
+      totalScore++;
       gameMessage = 'Pemain $currentPlayer Berhasil Pulang! (+1 Poin) Total: 2 Poin';
       playerVelocity = Offset.zero;
       joystickActive = false;
@@ -371,7 +355,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     
     _addVictoryParticles();
     
-    // Show success message then move to next player
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         _nextPlayer();
@@ -380,9 +363,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _nextPlayer() {
-    // Check if all 5 players have played
     if (currentPlayer >= 5) {
-      // Game finished - all 5 players have played
       setState(() {
         gameOver = true;
         gameStarted = false;
@@ -390,7 +371,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       });
       _addVictoryParticles();
     } else {
-      // Next player
       setState(() {
         currentPlayer++;
         playerCaught = false;
@@ -398,12 +378,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         playerPosition = const Offset(200, 460);
         returningHome = false;
         hasReachedFinish = false;
-        hasFinishPoint = false; // Reset finish point flag for new player
+        hasFinishPoint = false;
         gameMessage = 'Pemain $currentPlayer - Menuju Finish';
         playerVelocity = Offset.zero;
         joystickActive = false;
         knobPosition = Offset(joystickRadius + 20, joystickRadius + 20);
-        // Clear particles
         particles.clear();
         trailParticles.clear();
       });
@@ -435,7 +414,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       ),
       body: Column(
         children: [
-          // Game status
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -448,7 +426,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     _buildStatusCard('Pemain', '$currentPlayer/5'),
                     _buildStatusCard('Berhasil', '$playersCompleted'),
                     _buildStatusCard('Gagal', '$playersFailed'),
-                    _buildStatusCard('Skor', '$totalScore/10'), // Updated max score
+                    _buildStatusCard('Skor', '$totalScore/10'),
                   ],
                 ),
                 if (gameMessage.isNotEmpty) ...[
@@ -497,12 +475,10 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                 ),
                 child: Stack(
                   children: [
-                    // Field background with lines
                     CustomPaint(
                       painter: GameFieldPainter(),
                       size: Size(fieldWidth, fieldHeight),
                     ),
-                    // Particles
                     CustomPaint(
                       painter: ParticlePainter(
                         particles: particles,
@@ -510,7 +486,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                       ),
                       size: Size(fieldWidth, fieldHeight),
                     ),
-                    // Guards
                     AnimatedBuilder(
                       animation: _guardController,
                       builder: (context, child) {
@@ -524,24 +499,34 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                                 width: guardSize,
                                 height: guardSize,
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
                                   borderRadius: BorderRadius.circular(guardSize / 2),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.3),
-                                      blurRadius: 4,
+                                      color: Colors.red.withOpacity(0.5),
+                                      blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    '${guard.id}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/red.png',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.red,
+                                        child: Center(
+                                          child: Text(
+                                            '${guard.id}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
@@ -550,7 +535,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                         );
                       },
                     ),
-                    // Player
+                    // Player with Image
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 50),
                       left: playerPosition.dx - playerSize / 2,
@@ -559,29 +544,31 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                         width: playerMoving ? playerSize + 4 : playerSize,
                         height: playerMoving ? playerSize + 4 : playerSize,
                         decoration: BoxDecoration(
-                          color: playerCaught 
-                              ? Colors.orange
-                              : returningHome 
-                                  ? Colors.green 
-                                  : Colors.blue,
                           borderRadius: BorderRadius.circular(playerSize / 2),
                           boxShadow: [
                             BoxShadow(
                               color: playerCaught 
-                                  ? Colors.orange.withOpacity(0.6)
-                                  : returningHome 
-                                      ? Colors.green.withOpacity(0.6)
-                                      : Colors.blue.withOpacity(0.6),
-                              blurRadius: playerMoving ? 8 : 4,
+                                  ? Colors.red.withOpacity(0.6)
+                                  : Colors.blue.withOpacity(0.6),
+                              blurRadius: playerMoving ? 12 : 6,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 16,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/blue.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.blue,
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -592,7 +579,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
             ),
           ),
           
-          // Controls with FIXED Virtual Joystick
           Container(
             height: 200,
             padding: const EdgeInsets.all(20),
@@ -617,7 +603,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                   ),
                 
                 if (gameStarted && !gameOver) ...[
-                  // FIXED Virtual Joystick
                   Expanded(
                     child: Center(
                       child: SizedBox(
@@ -650,7 +635,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                     ),
                   ),
                   
-                  // Instructions
                   const Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
@@ -744,7 +728,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
 }
 
-// Guard class
 class Guard {
   final int id;
   final Offset basePosition;
@@ -766,7 +749,6 @@ class Guard {
   }
 }
 
-// Custom painter for the game field
 class GameFieldPainter extends CustomPainter {
   GameFieldPainter();
   
@@ -774,11 +756,9 @@ class GameFieldPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     
-    // Draw field lines
     paint.color = Colors.white;
     paint.strokeWidth = 3;
     
-    // Horizontal lines
     for (int i = 1; i <= 4; i++) {
       double y = 80.0 * i + 20;
       canvas.drawLine(
@@ -788,27 +768,24 @@ class GameFieldPainter extends CustomPainter {
       );
     }
     
-    // Vertical center line
     canvas.drawLine(
       Offset(size.width / 2, 100),
       Offset(size.width / 2, 340),
       paint,
     );
     
-    // Left and right boundary lines
     canvas.drawLine(
-      Offset(20, 80), // Start from finish area
-      Offset(20, size.height - 80), // End at start area
+      Offset(20, 80),
+      Offset(20, size.height - 80),
       paint,
     );
     
     canvas.drawLine(
-      Offset(size.width - 20, 80), // Start from finish area
-      Offset(size.width - 20, size.height - 80), // End at start area
+      Offset(size.width - 20, 80),
+      Offset(size.width - 20, size.height - 80),
       paint,
     );
     
-    // Draw start area
     paint.color = Colors.blue.withOpacity(0.2);
     paint.style = PaintingStyle.fill;
     canvas.drawRRect(
@@ -819,7 +796,6 @@ class GameFieldPainter extends CustomPainter {
       paint,
     );
     
-    // Draw finish area
     paint.color = Colors.yellow.withOpacity(0.2);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -829,14 +805,12 @@ class GameFieldPainter extends CustomPainter {
       paint,
     );
     
-    // Draw area labels
     final textStyle = TextStyle(
       color: Colors.white.withOpacity(0.8),
       fontSize: 16,
       fontWeight: FontWeight.bold,
     );
     
-    // START label
     TextPainter startPainter = TextPainter(
       text: TextSpan(text: 'START', style: textStyle),
       textDirection: TextDirection.ltr,
@@ -850,7 +824,6 @@ class GameFieldPainter extends CustomPainter {
       ),
     );
     
-    // FINISH label
     TextPainter finishPainter = TextPainter(
       text: TextSpan(text: 'FINISH', style: textStyle),
       textDirection: TextDirection.ltr,
@@ -871,7 +844,6 @@ class GameFieldPainter extends CustomPainter {
   }
 }
 
-// Particle shapes
 enum ParticleShape {
   circle,
   square,
@@ -880,7 +852,6 @@ enum ParticleShape {
   triangle,
 }
 
-// Particle class
 class Particle {
   Offset position;
   Offset velocity;
@@ -906,7 +877,7 @@ class Particle {
   
   void update() {
     position += velocity;
-    velocity *= 0.98; // Friction
+    velocity *= 0.98;
     rotation += rotationSpeed;
     life--;
   }
@@ -916,7 +887,6 @@ class Particle {
   }
 }
 
-// Particle painter
 class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
   final List<Particle> trailParticles;
@@ -930,20 +900,16 @@ class ParticlePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     
-    // Draw trail particles
     for (Particle particle in trailParticles) {
       paint.color = particle.color.withOpacity(particle.opacity * 0.4);
       _drawParticle(canvas, paint, particle, true);
     }
     
-    // Draw main particles with glow effect
     for (Particle particle in particles) {
-      // Draw glow
       paint.color = particle.color.withOpacity(particle.opacity * 0.3);
       paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
       _drawParticle(canvas, paint, particle, false);
       
-      // Draw main particle
       paint.maskFilter = null;
       paint.color = particle.color.withOpacity(particle.opacity);
       _drawParticle(canvas, paint, particle, false);
@@ -1024,7 +990,6 @@ class ParticlePainter extends CustomPainter {
   }
 }
 
-// FIXED Joystick painter
 class JoystickPainter extends CustomPainter {
   final Offset center;
   final Offset knobPosition;
@@ -1044,18 +1009,15 @@ class JoystickPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     
-    // Draw joystick outer ring
     paint.color = Colors.white.withOpacity(0.3);
     paint.style = PaintingStyle.stroke;
     paint.strokeWidth = 4;
     canvas.drawCircle(center, joystickRadius, paint);
     
-    // Draw joystick base
     paint.color = Colors.white.withOpacity(0.1);
     paint.style = PaintingStyle.fill;
     canvas.drawCircle(center, joystickRadius, paint);
     
-    // Draw direction indicator line if active
     if (isActive) {
       paint.color = Colors.blue.withOpacity(0.4);
       paint.strokeWidth = 3;
@@ -1063,25 +1025,21 @@ class JoystickPainter extends CustomPainter {
       canvas.drawLine(center, knobPosition, paint);
     }
     
-    // Draw knob shadow
     paint.color = Colors.black.withOpacity(0.2);
     paint.style = PaintingStyle.fill;
     canvas.drawCircle(knobPosition + const Offset(2, 2), knobRadius, paint);
     
-    // Draw knob
     paint.style = PaintingStyle.fill;
     paint.color = isActive 
         ? const Color(0xFF2196F3) 
         : Colors.white.withOpacity(0.8);
     canvas.drawCircle(knobPosition, knobRadius, paint);
     
-    // Draw knob border
     paint.color = isActive ? Colors.white : Colors.grey[400]!;
     paint.style = PaintingStyle.stroke;
     paint.strokeWidth = 3;
     canvas.drawCircle(knobPosition, knobRadius, paint);
     
-    // Draw center dot on knob
     paint.color = isActive ? Colors.white : Colors.grey[600]!;
     paint.style = PaintingStyle.fill;
     canvas.drawCircle(knobPosition, 4, paint);
