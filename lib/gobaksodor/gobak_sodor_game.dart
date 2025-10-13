@@ -333,9 +333,9 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     
     _addExplosionParticles();
     
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        _nextPlayer();
+        _showResultDialog(false);
       }
     });
   }
@@ -355,11 +355,119 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     
     _addVictoryParticles();
     
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        _nextPlayer();
+        _showResultDialog(true);
       }
     });
+  }
+  
+  void _showResultDialog(bool isSuccess) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isSuccess
+                  ? [const Color(0xFF4caf50), const Color(0xFF45a049)]
+                  : [const Color(0xFFf44336), const Color(0xFFe53935)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isSuccess ? Icons.check_circle : Icons.cancel,
+                  size: 50,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isSuccess ? 'BERHASIL!' : 'TERTANGKAP!',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isSuccess
+                    ? 'Pemain $currentPlayer berhasil pulang\ndengan selamat! (+2 Poin)'
+                    : 'Pemain $currentPlayer tertangkap\noleh penjaga!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Skor Total: $totalScore/10',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _nextPlayer();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: isSuccess ? const Color(0xFF4caf50) : const Color(0xFFf44336),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  currentPlayer >= 5 ? 'SELESAI' : 'LANJUT',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
   
   void _nextPlayer() {
@@ -403,7 +511,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
       backgroundColor: const Color(0xFF1a237e),
       appBar: AppBar(
         title: const Text(
-          'Gobak Sodor',
+          'Hadang',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -535,7 +643,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                         );
                       },
                     ),
-                    // Player with Image
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 50),
                       left: playerPosition.dx - playerSize / 2,
@@ -634,8 +741,6 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                       ),
                     ),
                   ),
-                  
-                
                 ],
                 
                 if (gameOver)
@@ -729,17 +834,14 @@ class Guard {
   
   Offset getCurrentPosition() {
     double progress = controller.value;
-    // Gunakan sin untuk gerakan smooth bolak-balik
     double movement = sin(progress * 2 * pi + id * 0.5);
     
     if (isHorizontal) {
-      // Bergerak dari 40 (kiri) sampai 360 (kanan)
       double minX = 40;
       double maxX = 360;
       double x = minX + (maxX - minX) * ((movement + 1) / 2);
       return Offset(x, basePosition.dy);
     } else {
-      // Bergerak vertikal
       double minY = 120;
       double maxY = 320;
       double y = minY + (maxY - minY) * ((movement + 1) / 2);
@@ -749,8 +851,6 @@ class Guard {
 }
 
 class GameFieldPainter extends CustomPainter {
-  GameFieldPainter();
-  
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
