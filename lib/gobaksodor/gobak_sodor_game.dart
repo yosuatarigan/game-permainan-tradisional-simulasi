@@ -103,7 +103,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         double newX = (playerPosition.dx + playerVelocity.dx)
             .clamp(30, fieldWidth - 30);
         double newY = (playerPosition.dy + playerVelocity.dy)
-            .clamp(70, fieldHeight - 70);
+            .clamp(40, fieldHeight - 70);
         
         playerPosition = Offset(newX, newY);
         
@@ -123,7 +123,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
   
   void _checkGameState() {
-    if (!hasReachedFinish && playerPosition.dy <= 90) {
+    if (!hasReachedFinish && playerPosition.dy <= 65) {
       hasReachedFinish = true;
       returningHome = true;
       
@@ -798,7 +798,7 @@ class GameFieldPainter extends CustomPainter {
     paint.color = Colors.yellow.withOpacity(0.2);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(20, 20, size.width - 40, 60),
+        Rect.fromLTWH(20, 10, size.width - 40, 55),
         const Radius.circular(8),
       ),
       paint,
@@ -811,7 +811,7 @@ class GameFieldPainter extends CustomPainter {
     );
     
     TextPainter startPainter = TextPainter(
-      text: TextSpan(text: 'START', style: textStyle),
+      text: TextSpan(text: 'DEPAN', style: textStyle),
       textDirection: TextDirection.ltr,
     );
     startPainter.layout();
@@ -824,7 +824,7 @@ class GameFieldPainter extends CustomPainter {
     );
     
     TextPainter finishPainter = TextPainter(
-      text: TextSpan(text: 'FINISH', style: textStyle),
+      text: TextSpan(text: 'BELAKANG', style: textStyle),
       textDirection: TextDirection.ltr,
     );
     finishPainter.layout();
@@ -832,7 +832,7 @@ class GameFieldPainter extends CustomPainter {
       canvas,
       Offset(
         (size.width - finishPainter.width) / 2,
-        45,
+        32,
       ),
     );
   }
