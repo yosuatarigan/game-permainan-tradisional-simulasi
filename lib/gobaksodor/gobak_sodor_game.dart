@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 //check
@@ -14,6 +15,8 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   late AnimationController _guardController;
   late AnimationController _gameController;
   late AnimationController _particleController;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool isPlaying = false;
 
   // Game state
   int currentPlayer = 1;
@@ -67,6 +70,45 @@ class _GobakSodorGameState extends State<GobakSodorGame>
         knobPosition = joystickPosition;
       });
     });
+  }
+
+  Future<void> _playAudio() async {
+    try {
+      await _audioPlayer.play(AssetSource('audio.mp3'));
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
+  Future<void> _playSuccess() async {
+    try {
+      await _audioPlayer.play(
+        AssetSource('succes.mp3'),
+        position: Duration(seconds: 1),
+      );
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
+  Future<void> _playFailed() async {
+    try {
+      await _audioPlayer.play(
+        AssetSource('failed.mp3'),
+        position: Duration(seconds: 2),
+      );
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
   }
 
   void _initializeGame() {
@@ -356,6 +398,11 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   }
 
   void _playerCaught() {
+    _playFailed().then((_) {
+      Future.delayed(const Duration(seconds: 4), () {
+        _playAudio();
+      });
+    });
     if (playerCaught || playerCompleted) return;
 
     setState(() {
@@ -378,6 +425,12 @@ class _GobakSodorGameState extends State<GobakSodorGame>
 
   void _playerCompletedRound() {
     if (playerCaught || playerCompleted) return;
+
+    _playSuccess().then((_) {
+      Future.delayed(const Duration(seconds: 4), () {
+        _playAudio();
+      });
+    });
 
     setState(() {
       playerCompleted = true;
@@ -621,11 +674,10 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                 ],
               ),
             ),
-      
+
             Expanded(
               child: Center(
                 child: Container(
-                         margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                   width: fieldWidth,
                   height: fieldHeight,
                   decoration: BoxDecoration(
@@ -745,10 +797,10 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                 ),
               ),
             ),
-      
+
             Container(
               height: 120,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
                   if (!gameStarted)
@@ -768,7 +820,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                       ),
                       child: Text(gameOver ? 'Main Lagi' : 'Mulai Game'),
                     ),
-      
+
                   if (gameStarted && !gameOver) ...[
                     Expanded(
                       child: Center(
@@ -778,15 +830,18 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                           height: (joystickRadius + 20) * 2,
                           child: GestureDetector(
                             onPanStart:
-                                (details) =>
-                                    _handleJoystickStart(details.globalPosition),
+                                (details) => _handleJoystickStart(
+                                  details.globalPosition,
+                                ),
                             onPanUpdate:
-                                (details) =>
-                                    _handleJoystickUpdate(details.globalPosition),
+                                (details) => _handleJoystickUpdate(
+                                  details.globalPosition,
+                                ),
                             onPanEnd: (details) => _stopJoystick(),
                             onTapDown:
-                                (details) =>
-                                    _handleJoystickStart(details.globalPosition),
+                                (details) => _handleJoystickStart(
+                                  details.globalPosition,
+                                ),
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.black12,
@@ -816,7 +871,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                       ),
                     ),
                   ],
-      
+
                   if (gameOver)
                     Container(
                       margin: const EdgeInsets.only(top: 16),

@@ -1,4 +1,5 @@
 // File: lib/screens/splash_screen.dart (Updated for Game Selection)
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/game_constants.dart';
@@ -15,12 +16,15 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _logoController;
   late AnimationController _progressController;
   late Animation<double> _logoAnimation;
   late Animation<double> _fadeAnimation;
-  
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool isPlaying = false;
+
   String _loadingText = 'Memuat permainan...';
   double _progress = 0.0;
   bool _hasError = false;
@@ -28,8 +32,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
+    _playAudio();
     _initializeAnimations();
     _initializeApp();
+  }
+
+  Future<void> _playAudio() async {
+    try {
+      await _audioPlayer.play(AssetSource('audio.mp3'));
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
   }
 
   void _initializeAnimations() {
@@ -43,21 +59,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
     );
 
-    _logoAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: Curves.elasticOut,
-    ));
+    _logoAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
+    );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoController,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+      ),
+    );
 
     _logoController.forward();
   }
@@ -70,45 +81,44 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         _progress = 0.2;
       });
       await AssetManager.instance.preloadAllAssets();
-      
+
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Step 2: Initialize audio
       setState(() {
         _loadingText = 'Menyiapkan audio...';
         _progress = 0.5;
       });
       await AudioService.instance.initialize();
-      
+
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Step 3: Load settings
       setState(() {
         _loadingText = 'Memuat pengaturan...';
         _progress = 0.8;
       });
-      
+
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Step 4: Complete
       setState(() {
         _loadingText = 'Siap bermain!';
         _progress = 1.0;
       });
-      
+
       await _progressController.forward();
       await AudioService.instance.playMenuMusic();
-      
+
       // Navigate to game selection
       await Future.delayed(const Duration(milliseconds: 1000));
       _navigateToNextScreen();
-      
     } catch (e) {
       setState(() {
         _hasError = true;
         _loadingText = 'Terjadi kesalahan';
       });
-      
+
       // Show error and continue anyway
       await Future.delayed(const Duration(seconds: 2));
       _navigateToNextScreen();
@@ -117,20 +127,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   void _navigateToNextScreen() {
     final isFirstTime = !LocalStorageService.instance.tutorialCompleted;
-    
+
     if (isFirstTime) {
       // Show Egrang tutorial for first-time users as introduction
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => EgrangTutorialScreen(
-            onCompleted: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const GameSelectionScreen()),
-              );
-            },
-          ),
+          builder:
+              (context) => EgrangTutorialScreen(
+                onCompleted: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GameSelectionScreen(),
+                    ),
+                  );
+                },
+              ),
         ),
       );
     } else {
@@ -157,10 +170,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              GameColors.primaryGreen,
-              GameColors.secondaryGreen,
-            ],
+            colors: [GameColors.primaryGreen, GameColors.secondaryGreen],
           ),
         ),
         child: SafeArea(
@@ -200,9 +210,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   color: GameColors.primaryGreen,
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               const Text(
                                 'PERMAINAN TRADISIONAL',
                                 style: TextStyle(
@@ -211,9 +221,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   color: Colors.white,
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 8),
-                              
+
                               Text(
                                 'Hadang & Egrang',
                                 style: TextStyle(
@@ -230,7 +240,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                 ),
               ),
-              
+
               // Loading section
               Expanded(
                 flex: 1,
@@ -291,9 +301,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               },
                             ),
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           Text(
                             _loadingText,
                             style: const TextStyle(
@@ -302,9 +312,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 8),
-                          
+
                           Text(
                             '${(_progress * 100).toInt()}%',
                             style: TextStyle(
@@ -317,7 +327,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ],
                 ),
               ),
-              
+
               // Footer
               Container(
                 padding: const EdgeInsets.all(16),
