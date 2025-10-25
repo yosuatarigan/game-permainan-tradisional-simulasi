@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+//check
 
 class GobakSodorGame extends StatefulWidget {
   const GobakSodorGame({super.key});
@@ -40,7 +41,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
   Offset joystickPosition = Offset.zero;
   Offset knobPosition = Offset.zero;
   bool joystickActive = false;
-  final double joystickRadius = 45;
+  final double joystickRadius = 30;
   final double knobRadius = 18;
   final GlobalKey joystickKey = GlobalKey();
 
@@ -554,312 +555,315 @@ class _GobakSodorGameState extends State<GobakSodorGame>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1a237e),
-      appBar: AppBar(
-        title: const Text(
-          'Hadang',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1a237e),
+        appBar: AppBar(
+          title: const Text(
+            'Hadang',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFF0d47a1),
+          elevation: 0,
         ),
-        backgroundColor: const Color(0xFF0d47a1),
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF0d47a1),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatusCard('Pemain', '$currentPlayer/5'),
-                    _buildStatusCard('Berhasil', '$playersCompleted'),
-                    _buildStatusCard('Gagal', '$playersFailed'),
-                    _buildStatusCard('Skor', '$totalScore/10'),
-                  ],
-                ),
-                if (gameMessage.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          playerCaught
-                              ? Colors.red.withOpacity(0.2)
-                              : hasReachedFinish
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.blue.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+        body: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              color: const Color(0xFF0d47a1),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatusCard('Pemain', '$currentPlayer/5'),
+                      _buildStatusCard('Berhasil', '$playersCompleted'),
+                      _buildStatusCard('Gagal', '$playersFailed'),
+                      _buildStatusCard('Skor', '$totalScore/10'),
+                    ],
+                  ),
+                  if (gameMessage.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
                         color:
                             playerCaught
-                                ? Colors.red
+                                ? Colors.red.withOpacity(0.2)
                                 : hasReachedFinish
-                                ? Colors.green
-                                : Colors.blue,
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.blue.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              playerCaught
+                                  ? Colors.red
+                                  : hasReachedFinish
+                                  ? Colors.green
+                                  : Colors.blue,
+                        ),
+                      ),
+                      child: Text(
+                        gameMessage,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    child: Text(
-                      gameMessage,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-
-          Expanded(
-            child: Center(
-              child: Container(
-                width: fieldWidth,
-                height: fieldHeight,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4caf50),
-                  border: Border.all(color: Colors.white, width: 3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                    CustomPaint(
-                      painter: GameFieldPainter(),
-                      size: Size(fieldWidth, fieldHeight),
-                    ),
-                    CustomPaint(
-                      painter: ParticlePainter(
-                        particles: particles,
-                        trailParticles: trailParticles,
+      
+            Expanded(
+              child: Center(
+                child: Container(
+                         margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                  width: fieldWidth,
+                  height: fieldHeight,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4caf50),
+                    border: Border.all(color: Colors.white, width: 3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Stack(
+                    children: [
+                      CustomPaint(
+                        painter: GameFieldPainter(),
+                        size: Size(fieldWidth, fieldHeight),
                       ),
-                      size: Size(fieldWidth, fieldHeight),
-                    ),
-                    AnimatedBuilder(
-                      animation: _guardController,
-                      builder: (context, child) {
-                        return Stack(
-                          children:
-                              guards.map((guard) {
-                                Offset pos = guard.getCurrentPosition();
-                                return Positioned(
-                                  left: pos.dx - guardSize / 2,
-                                  top: pos.dy - guardSize / 2,
-                                  child: Container(
-                                    width: guardSize,
-                                    height: guardSize,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        guardSize / 2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.red.withOpacity(0.5),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
+                      CustomPaint(
+                        painter: ParticlePainter(
+                          particles: particles,
+                          trailParticles: trailParticles,
+                        ),
+                        size: Size(fieldWidth, fieldHeight),
+                      ),
+                      AnimatedBuilder(
+                        animation: _guardController,
+                        builder: (context, child) {
+                          return Stack(
+                            children:
+                                guards.map((guard) {
+                                  Offset pos = guard.getCurrentPosition();
+                                  return Positioned(
+                                    left: pos.dx - guardSize / 2,
+                                    top: pos.dy - guardSize / 2,
+                                    child: Container(
+                                      width: guardSize,
+                                      height: guardSize,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          guardSize / 2,
                                         ),
-                                      ],
-                                    ),
-                                    child: ClipOval(
-                                      child: Image.asset(
-                                        'assets/red.png',
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return Container(
-                                            color: Colors.red,
-                                            child: Center(
-                                              child: Text(
-                                                '${guard.id}',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.red.withOpacity(0.5),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/red.png',
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Container(
+                                              color: Colors.red,
+                                              child: Center(
+                                                child: Text(
+                                                  '${guard.id}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          );
-                                        },
+                                            );
+                                          },
+                                        ),
                                       ),
                                     ),
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 50),
+                        left: playerPosition.dx - playerSize / 2,
+                        top: playerPosition.dy - playerSize / 2,
+                        child: Container(
+                          width: playerMoving ? playerSize + 4 : playerSize,
+                          height: playerMoving ? playerSize + 4 : playerSize,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(playerSize / 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    playerCaught
+                                        ? Colors.red.withOpacity(0.6)
+                                        : Colors.blue.withOpacity(0.6),
+                                blurRadius: playerMoving ? 12 : 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/blue.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.blue,
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 24,
                                   ),
                                 );
-                              }).toList(),
-                        );
-                      },
-                    ),
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 50),
-                      left: playerPosition.dx - playerSize / 2,
-                      top: playerPosition.dy - playerSize / 2,
-                      child: Container(
-                        width: playerMoving ? playerSize + 4 : playerSize,
-                        height: playerMoving ? playerSize + 4 : playerSize,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(playerSize / 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  playerCaught
-                                      ? Colors.red.withOpacity(0.6)
-                                      : Colors.blue.withOpacity(0.6),
-                              blurRadius: playerMoving ? 12 : 6,
-                              offset: const Offset(0, 2),
+                              },
                             ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/blue.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.blue,
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              );
-                            },
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-
-          Container(
-            height: 120,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                if (!gameStarted)
-                  ElevatedButton(
-                    onPressed: _startGame,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4caf50),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+      
+            Container(
+              height: 120,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                children: [
+                  if (!gameStarted)
+                    ElevatedButton(
+                      onPressed: _startGame,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4caf50),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      textStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      child: Text(gameOver ? 'Main Lagi' : 'Mulai Game'),
                     ),
-                    child: Text(gameOver ? 'Main Lagi' : 'Mulai Game'),
-                  ),
-
-                if (gameStarted && !gameOver) ...[
-                  Expanded(
-                    child: Center(
-                      child: SizedBox(
-                        key: joystickKey,
-                        width: (joystickRadius + 20) * 2,
-                        height: (joystickRadius + 20) * 2,
-                        child: GestureDetector(
-                          onPanStart:
-                              (details) =>
-                                  _handleJoystickStart(details.globalPosition),
-                          onPanUpdate:
-                              (details) =>
-                                  _handleJoystickUpdate(details.globalPosition),
-                          onPanEnd: (details) => _stopJoystick(),
-                          onTapDown:
-                              (details) =>
-                                  _handleJoystickStart(details.globalPosition),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black12,
-                              borderRadius: BorderRadius.circular(
-                                (joystickRadius + 20),
-                              ),
-                            ),
-                            child: CustomPaint(
-                              painter: JoystickPainter(
-                                center: Offset(
-                                  joystickRadius + 20,
-                                  joystickRadius + 20,
+      
+                  if (gameStarted && !gameOver) ...[
+                    Expanded(
+                      child: Center(
+                        child: SizedBox(
+                          key: joystickKey,
+                          width: (joystickRadius + 20) * 2,
+                          height: (joystickRadius + 20) * 2,
+                          child: GestureDetector(
+                            onPanStart:
+                                (details) =>
+                                    _handleJoystickStart(details.globalPosition),
+                            onPanUpdate:
+                                (details) =>
+                                    _handleJoystickUpdate(details.globalPosition),
+                            onPanEnd: (details) => _stopJoystick(),
+                            onTapDown:
+                                (details) =>
+                                    _handleJoystickStart(details.globalPosition),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black12,
+                                borderRadius: BorderRadius.circular(
+                                  (joystickRadius + 20),
                                 ),
-                                knobPosition: knobPosition,
-                                joystickRadius: joystickRadius,
-                                knobRadius: knobRadius,
-                                isActive: joystickActive,
                               ),
-                              size: Size(
-                                (joystickRadius + 20) * 2,
-                                (joystickRadius + 20) * 2,
+                              child: CustomPaint(
+                                painter: JoystickPainter(
+                                  center: Offset(
+                                    joystickRadius + 20,
+                                    joystickRadius + 20,
+                                  ),
+                                  knobPosition: knobPosition,
+                                  joystickRadius: joystickRadius,
+                                  knobRadius: knobRadius,
+                                  isActive: joystickActive,
+                                ),
+                                size: Size(
+                                  (joystickRadius + 20) * 2,
+                                  (joystickRadius + 20) * 2,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
+      
+                  if (gameOver)
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color:
+                            totalScore >= 6
+                                ? const Color(0xFF4caf50)
+                                : totalScore >= 3
+                                ? Colors.orange
+                                : Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            totalScore == 10
+                                ? '🏆 PERFECT! Semua pemain bolak-balik!'
+                                : totalScore >= 6
+                                ? '🎉 Bagus! $totalScore dari 10 poin berhasil!'
+                                : totalScore >= 3
+                                ? '👍 Lumayan! $totalScore dari 10 poin berhasil!'
+                                : '😔 Coba lagi! Skor: $totalScore dari 10.',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Skor Akhir: $totalScore/10',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
-
-                if (gameOver)
-                  Container(
-                    margin: const EdgeInsets.only(top: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                          totalScore >= 6
-                              ? const Color(0xFF4caf50)
-                              : totalScore >= 3
-                              ? Colors.orange
-                              : Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          totalScore == 10
-                              ? '🏆 PERFECT! Semua pemain bolak-balik!'
-                              : totalScore >= 6
-                              ? '🎉 Bagus! $totalScore dari 10 poin berhasil!'
-                              : totalScore >= 3
-                              ? '👍 Lumayan! $totalScore dari 10 poin berhasil!'
-                              : '😔 Coba lagi! Skor: $totalScore dari 10.',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Skor Akhir: $totalScore/10',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
