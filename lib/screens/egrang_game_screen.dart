@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math';
-
+//check
 class EgrangRaceScreen extends StatefulWidget {
   @override
   _EgrangRaceScreenState createState() => _EgrangRaceScreenState();
@@ -28,6 +28,11 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   Timer? gameTimer;
   final double finishDistance = 4000.0;
   bool isGameWon = false;
+  
+  // BARU: Game over state
+  bool isGameOver = false;
+  bool isFalling = false;
+  double fallVelocity = 0.0;
 
   // Movement state
   bool movingLeft = false;
@@ -94,9 +99,20 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   }
 
   void updateGame() {
-    if (isGameWon) return;
+    if (isGameWon || isGameOver) return;
 
     setState(() {
+      // BARU: Animasi jatuh
+      if (isFalling) {
+        playerY += fallVelocity;
+        fallVelocity += 1.2;
+        
+        if (playerY > 100) {
+          gameOver();
+          return;
+        }
+      }
+
       double newPlayerX = playerX;
       isMoving = false;
 
@@ -140,6 +156,9 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
         }
       }
 
+      // BARU: Check collision dengan rintangan berbahaya
+      _checkDangerousObstacleCollision();
+
       // BARU: Check collision dengan bintang
       _checkStarCollection();
 
@@ -165,6 +184,162 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     }
   }
 
+  // BARU: Function untuk check collision dengan rintangan berbahaya
+  void _checkDangerousObstacleCollision() {
+    if (isFalling || isJumping) return;
+
+    for (Obstacle obstacle in obstacles) {
+      double obstacleLeft = obstacle.x - _getObstacleWidth(obstacle.type) / 2;
+      double obstacleRight = obstacle.x + _getObstacleWidth(obstacle.type) / 2;
+      
+      double playerLeft = playerX - 18;
+      double playerRight = playerX + 18;
+
+      if (playerRight > obstacleLeft && playerLeft < obstacleRight) {
+        // Rintangan yang menyebabkan jatuh
+        switch (obstacle.type) {
+          case ObstacleType.rock:
+          case ObstacleType.spike:
+          case ObstacleType.lowBarrier:
+          case ObstacleType.hole:
+            triggerFall();
+            return;
+          default:
+            break;
+        }
+      }
+    }
+  }
+
+  // BARU: Function untuk trigger animasi jatuh
+  void triggerFall() {
+    setState(() {
+      isFalling = true;
+      fallVelocity = -8.0;
+      isJumping = false;
+      jumpVelocity = 0;
+    });
+  }
+
+  // BARU: Function untuk game over
+  void gameOver() {
+    isGameOver = true;
+    gameTimer?.cancel();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Column(
+          children: [
+            Icon(Icons.error_outline, size: 70, color: Colors.red),
+            SizedBox(height: 12),
+            Text(
+              'Gagal! 😢',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.red[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Kamu terkena rintangan!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[800],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue, width: 2),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        '$starScore bintang',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}% perjalanan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Kembali', style: TextStyle(fontSize: 16)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  resetGame();
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Main Lagi', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void startMovingLeft() {
     movingLeft = true;
   }
@@ -182,7 +357,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   }
 
   void jump() {
-    if (!isJumping && playerY >= 0) {
+    if (!isJumping && playerY >= 0 && !isFalling) {
       setState(() {
         isJumping = true;
         jumpVelocity = -12.0;
@@ -293,6 +468,9 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
       jumpVelocity = 0.0;
       progress = 0.0;
       isGameWon = false;
+      isGameOver = false; // BARU: Reset game over
+      isFalling = false; // BARU: Reset falling
+      fallVelocity = 0.0; // BARU: Reset fall velocity
       movingLeft = false;
       movingRight = false;
       stepAnimation = 0.0;
