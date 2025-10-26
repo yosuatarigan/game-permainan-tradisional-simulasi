@@ -1,7 +1,9 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math';
+
 //check
 class EgrangRaceScreen extends StatefulWidget {
   @override
@@ -19,6 +21,8 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   double stepAnimation = 0.0;
   double stepSpeed = 0.12;
   bool isMoving = false;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool isPlaying = false;
 
   // Game state
   double progress = 0.0;
@@ -28,11 +32,11 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   Timer? gameTimer;
   final double finishDistance = 4000.0;
   bool isGameWon = false;
-  
+
   // BARU: Game over state
   bool isGameOver = false;
   bool isFalling = false;
-  double fallVelocity = 0.0;
+  double fallRotation = 0.0; // Rotasi saat tumbang
 
   // Movement state
   bool movingLeft = false;
@@ -52,7 +56,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   void startGame() {
     obstacles.clear();
     stars.clear(); // BARU: Clear bintang
-    
+
     // Generate obstacles
     for (int i = 0; i < 20; i++) {
       obstacles.add(
@@ -69,6 +73,45 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     gameTimer = Timer.periodic(Duration(milliseconds: 16), (timer) {
       updateGame();
     });
+  }
+
+  Future<void> _playAudio() async {
+    try {
+      await _audioPlayer.play(AssetSource('audio.mp3'));
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
+  Future<void> _playSuccess() async {
+    try {
+      await _audioPlayer.play(
+        AssetSource('succes.mp3'),
+        position: Duration(seconds: 1),
+      );
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
+  Future<void> _playFailed() async {
+    try {
+      await _audioPlayer.play(
+        AssetSource('failed.mp3'),
+        position: Duration(seconds: 2),
+      );
+      setState(() {
+        isPlaying = true;
+      });
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
   }
 
   // BARU: Function untuk generate bintang
@@ -102,12 +145,13 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     if (isGameWon || isGameOver) return;
 
     setState(() {
-      // BARU: Animasi jatuh
+      // BARU: Animasi tumbang (rotasi)
       if (isFalling) {
-        playerY += fallVelocity;
-        fallVelocity += 1.2;
-        
-        if (playerY > 100) {
+        fallRotation += 0.15; // Rotasi bertahap
+        playerY += 2; // Turun sedikit
+
+        if (fallRotation >= 1.5) {
+          // Setelah rotasi 90 derajat
           gameOver();
           return;
         }
@@ -118,19 +162,21 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
 
       double currentMoveSpeed = _getCurrentMoveSpeed();
 
-      // Movement
-      if (movingLeft && playerX > 50) {
-        newPlayerX = playerX - currentMoveSpeed;
-        if (!_checkObstacleCollision(newPlayerX)) {
-          playerX = newPlayerX;
-          isMoving = true;
+      // Movement - tidak bisa gerak saat falling
+      if (!isFalling) {
+        if (movingLeft && playerX > 50) {
+          newPlayerX = playerX - currentMoveSpeed;
+          if (!_checkObstacleCollision(newPlayerX)) {
+            playerX = newPlayerX;
+            isMoving = true;
+          }
         }
-      }
-      if (movingRight && playerX < finishDistance + 200) {
-        newPlayerX = playerX + currentMoveSpeed;
-        if (!_checkObstacleCollision(newPlayerX)) {
-          playerX = newPlayerX;
-          isMoving = true;
+        if (movingRight && playerX < finishDistance + 200) {
+          newPlayerX = playerX + currentMoveSpeed;
+          if (!_checkObstacleCollision(newPlayerX)) {
+            playerX = newPlayerX;
+            isMoving = true;
+          }
         }
       }
 
@@ -174,7 +220,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
       if (!star.collected) {
         double distance = (star.x - playerX).abs();
         double verticalDistance = ((120 - playerY) - star.y).abs();
-        
+
         // Jika player dekat dengan bintang (radius 40px)
         if (distance < 40 && verticalDistance < 40) {
           star.collected = true;
@@ -191,7 +237,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     for (Obstacle obstacle in obstacles) {
       double obstacleLeft = obstacle.x - _getObstacleWidth(obstacle.type) / 2;
       double obstacleRight = obstacle.x + _getObstacleWidth(obstacle.type) / 2;
-      
+
       double playerLeft = playerX - 18;
       double playerRight = playerX + 18;
 
@@ -202,7 +248,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
           case ObstacleType.spike:
           case ObstacleType.lowBarrier:
           case ObstacleType.hole:
-            triggerFall();
+            triggerFall(); // Trigger animasi tumbang
             return;
           default:
             break;
@@ -211,11 +257,10 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     }
   }
 
-  // BARU: Function untuk trigger animasi jatuh
+  // BARU: Function untuk trigger animasi tumbang
   void triggerFall() {
     setState(() {
       isFalling = true;
-      fallVelocity = -8.0;
       isJumping = false;
       jumpVelocity = 0;
     });
@@ -226,117 +271,127 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     isGameOver = true;
     gameTimer?.cancel();
 
+    _playFailed().then((_) {
+      Future.delayed(const Duration(seconds: 4), () {
+        _playAudio();
+      });
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Column(
-          children: [
-            Icon(Icons.error_outline, size: 70, color: Colors.red),
-            SizedBox(height: 12),
-            Text(
-              'Gagal! 😢',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.red[700],
-              ),
-              textAlign: TextAlign.center,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Kamu terkena rintangan!',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[800],
-              ),
-              textAlign: TextAlign.center,
+            title: Column(
+              children: [
+                Icon(Icons.error_outline, size: 70, color: Colors.red),
+                SizedBox(height: 12),
+                Text(
+                  'Gagal! 😢',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            SizedBox(height: 16),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue, width: 2),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Kamu terkena rintangan!',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[800],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue, width: 2),
+                  ),
+                  child: Column(
                     children: [
-                      Icon(Icons.star, color: Colors.amber, size: 24),
-                      SizedBox(width: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.star, color: Colors.amber, size: 24),
+                          SizedBox(width: 8),
+                          Text(
+                            '$starScore bintang',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
                       Text(
-                        '$starScore bintang',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[800],
-                        ),
+                        '${(progress * 100).toStringAsFixed(0)}% perjalanan',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}% perjalanan',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[700],
+                ),
+              ],
+            ),
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    child: Text('Kembali', style: TextStyle(fontSize: 16)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      resetGame();
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text('Main Lagi', style: TextStyle(fontSize: 16)),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text('Kembali', style: TextStyle(fontSize: 16)),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  resetGame();
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text('Main Lagi', style: TextStyle(fontSize: 16)),
-              ),
             ],
           ),
-        ],
-      ),
     );
   }
 
@@ -357,7 +412,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   }
 
   void jump() {
-    if (!isJumping && playerY >= 0 && !isFalling) {
+    if (!isJumping && playerY >= 0) {
       setState(() {
         isJumping = true;
         jumpVelocity = -12.0;
@@ -368,95 +423,107 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   void winGame() {
     isGameWon = true;
     gameTimer?.cancel();
+    _playSuccess().then((_) {
+      Future.delayed(const Duration(seconds: 4), () {
+        _playAudio();
+      });
+    });
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Selamat! 🎉',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.emoji_events, size: 80, color: Colors.amber),
-            SizedBox(height: 16),
-            Text(
-              'Kamu berhasil mencapai garis finish!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Selamat! 🎉',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 12),
-            // BARU: Tampilkan score bintang
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber, width: 2),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.emoji_events, size: 80, color: Colors.amber),
+                SizedBox(height: 16),
+                Text(
+                  'Kamu berhasil mencapai garis finish!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 12),
+                // BARU: Tampilkan score bintang
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber, width: 2),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: 32),
+                      SizedBox(width: 8),
+                      Text(
+                        '$starScore / ${stars.length}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Lomba egrang 4000 meter yang luar biasa!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Icon(Icons.star, color: Colors.amber, size: 32),
-                  SizedBox(width: 8),
-                  Text(
-                    '$starScore / ${stars.length}',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber[800],
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                     ),
+                    child: Text('Kembali'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      resetGame();
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                    child: Text('Main Lagi'),
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Lomba egrang 4000 meter yang luar biasa!',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
-                child: Text('Kembali'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  resetGame();
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
-                child: Text('Main Lagi'),
-              ),
             ],
           ),
-        ],
-      ),
     );
   }
 
@@ -470,7 +537,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
       isGameWon = false;
       isGameOver = false; // BARU: Reset game over
       isFalling = false; // BARU: Reset falling
-      fallVelocity = 0.0; // BARU: Reset fall velocity
+      fallRotation = 0.0; // BARU: Reset rotation
       movingLeft = false;
       movingRight = false;
       stepAnimation = 0.0;
@@ -545,7 +612,8 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
     for (Obstacle obstacle in obstacles) {
       if (_isHighObstacle(obstacle.type)) {
         double obstacleLeft = obstacle.x - _getObstacleWidth(obstacle.type) / 2;
-        double obstacleRight = obstacle.x + _getObstacleWidth(obstacle.type) / 2;
+        double obstacleRight =
+            obstacle.x + _getObstacleWidth(obstacle.type) / 2;
         double playerLeft = newPlayerX - 18;
         double playerRight = newPlayerX + 18;
 
@@ -600,7 +668,10 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double cameraOffset = (playerX - screenWidth / 3).clamp(0.0, double.infinity);
+    double cameraOffset = (playerX - screenWidth / 3).clamp(
+      0.0,
+      double.infinity,
+    );
 
     return Scaffold(
       body: Container(
@@ -650,7 +721,10 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                         decoration: BoxDecoration(
                           color: Color(0xFFDEB887),
                           border: Border.symmetric(
-                            horizontal: BorderSide(color: Colors.brown, width: 2),
+                            horizontal: BorderSide(
+                              color: Colors.brown,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -659,7 +733,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                     // BARU: Render bintang-bintang
                     ...stars.map((star) {
                       if (star.collected) return SizedBox.shrink();
-                      
+
                       return Positioned(
                         bottom: star.y,
                         left: star.x - cameraOffset,
@@ -674,9 +748,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                                 child: Container(
                                   width: 30,
                                   height: 30,
-                                  child: CustomPaint(
-                                    painter: StarPainter(),
-                                  ),
+                                  child: CustomPaint(painter: StarPainter()),
                                 ),
                               ),
                             );
@@ -686,25 +758,32 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                     }).toList(),
 
                     // Obstacles
-                    ...obstacles.map((obstacle) => Positioned(
-                      bottom: _getObstacleBottomPosition(obstacle.type),
-                      left: obstacle.x - cameraOffset,
-                      child: _buildObstacleWidget(obstacle.type),
-                    )).toList(),
+                    ...obstacles
+                        .map(
+                          (obstacle) => Positioned(
+                            bottom: _getObstacleBottomPosition(obstacle.type),
+                            left: obstacle.x - cameraOffset,
+                            child: _buildObstacleWidget(obstacle.type),
+                          ),
+                        )
+                        .toList(),
 
                     // Player
                     Positioned(
                       bottom: 120 - playerY,
                       left: playerX - cameraOffset - 25,
-                      child: Transform.scale(
-                        scaleX: movingLeft ? -1 : 1,
-                        child: Container(
-                          width: 50,
-                          height: 80,
-                          child: CustomPaint(
-                            painter: EgrangPlayerPainter(
-                              stepAnimation: stepAnimation,
-                              isMoving: isMoving,
+                      child: Transform.rotate(
+                        angle: fallRotation, // BARU: Rotasi saat tumbang
+                        child: Transform.scale(
+                          scaleX: movingLeft ? -1 : 1,
+                          child: Container(
+                            width: 50,
+                            height: 80,
+                            child: CustomPaint(
+                              painter: EgrangPlayerPainter(
+                                stepAnimation: stepAnimation,
+                                isMoving: isMoving,
+                              ),
                             ),
                           ),
                         ),
@@ -720,14 +799,22 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                         height: 200,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Colors.red, Colors.white, Colors.red, Colors.white],
+                            colors: [
+                              Colors.red,
+                              Colors.white,
+                              Colors.red,
+                              Colors.white,
+                            ],
                             stops: [0.0, 0.25, 0.5, 0.75],
                           ),
                         ),
                         child: Column(
                           children: [
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(8),
@@ -1036,7 +1123,11 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
             ],
           ),
           child: Center(
-            child: Icon(Icons.keyboard_arrow_up, size: 10, color: Colors.orange),
+            child: Icon(
+              Icons.keyboard_arrow_up,
+              size: 10,
+              color: Colors.orange,
+            ),
           ),
         );
 
@@ -1050,7 +1141,11 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
             border: Border.all(color: Colors.yellow, width: 1),
           ),
           child: Center(
-            child: Icon(Icons.keyboard_arrow_down, size: 8, color: Colors.yellow),
+            child: Icon(
+              Icons.keyboard_arrow_down,
+              size: 8,
+              color: Colors.yellow,
+            ),
           ),
         );
 
@@ -1089,11 +1184,7 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
         );
 
       default:
-        return Container(
-          width: 30,
-          height: 15,
-          color: Colors.grey,
-        );
+        return Container(width: 30, height: 15, color: Colors.grey);
     }
   }
 
@@ -1145,7 +1236,11 @@ class _EgrangRaceScreenState extends State<EgrangRaceScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.green, Colors.yellow, Colors.red],
+                                colors: [
+                                  Colors.green,
+                                  Colors.yellow,
+                                  Colors.red,
+                                ],
                               ),
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -1338,14 +1433,16 @@ enum ObstacleType {
 class StarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.amber
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = Colors.amber
+          ..style = PaintingStyle.fill;
 
-    final outlinePaint = Paint()
-      ..color = Colors.yellow[700]!
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+    final outlinePaint =
+        Paint()
+          ..color = Colors.yellow[700]!
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2;
 
     final path = Path();
     final centerX = size.width / 2;
@@ -1375,15 +1472,12 @@ class StarPainter extends CustomPainter {
     canvas.drawPath(path, outlinePaint);
 
     // Tambahkan shine effect
-    final shinePaint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
-      ..style = PaintingStyle.fill;
+    final shinePaint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.6)
+          ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(
-      Offset(centerX - 3, centerY - 3),
-      3,
-      shinePaint,
-    );
+    canvas.drawCircle(Offset(centerX - 3, centerY - 3), 3, shinePaint);
   }
 
   @override
@@ -1394,9 +1488,10 @@ class StarPainter extends CustomPainter {
 class CloudPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.85)
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.85)
+          ..style = PaintingStyle.fill;
 
     canvas.drawOval(
       Rect.fromLTWH(0, size.height * 0.3, size.width * 0.4, size.height * 0.6),
@@ -1564,10 +1659,11 @@ class BushTreePainter extends CustomPainter {
 class BirdPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black54
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = Colors.black54
+          ..strokeWidth = 2
+          ..style = PaintingStyle.stroke;
 
     final path1 = Path();
     path1.moveTo(size.width * 0.2, size.height * 0.3);
@@ -1588,9 +1684,10 @@ class BirdPainter extends CustomPainter {
 class SpikePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Color(0xFF696969)
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = Color(0xFF696969)
+          ..style = PaintingStyle.fill;
 
     final spikePath = Path();
     spikePath.moveTo(0, size.height);
@@ -1604,10 +1701,11 @@ class SpikePainter extends CustomPainter {
 
     canvas.drawPath(spikePath, paint);
 
-    final highlightPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
+    final highlightPaint =
+        Paint()
+          ..color = Colors.red
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
     canvas.drawPath(spikePath, highlightPaint);
   }
 
@@ -1618,9 +1716,10 @@ class SpikePainter extends CustomPainter {
 class RampPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Color(0xFF8B4513)
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = Color(0xFF8B4513)
+          ..style = PaintingStyle.fill;
 
     final rampPath = Path();
     rampPath.moveTo(0, size.height);
@@ -1630,9 +1729,10 @@ class RampPainter extends CustomPainter {
 
     canvas.drawPath(rampPath, paint);
 
-    final linePaint = Paint()
-      ..color = Color(0xFF654321)
-      ..strokeWidth = 1;
+    final linePaint =
+        Paint()
+          ..color = Color(0xFF654321)
+          ..strokeWidth = 1;
 
     for (int i = 1; i < 4; i++) {
       double y = size.height - (size.height * 0.15 * i);

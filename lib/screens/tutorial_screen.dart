@@ -37,111 +37,114 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: GameColors.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Cara Bermain Hadang'),
-        backgroundColor: GameColors.primaryGreen,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          if (!widget.isFirstTime)
-            TextButton(
-              onPressed: _completeTutorial,
-              child: const Text(
-                'Lewati',
-                style: TextStyle(color: Colors.white),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: GameColors.backgroundColor,
+        appBar: AppBar(
+          title: const Text('Cara Bermain Hadang'),
+          backgroundColor: GameColors.primaryGreen,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            if (!widget.isFirstTime)
+              TextButton(
+                onPressed: _completeTutorial,
+                child: const Text(
+                  'Lewati',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Progress indicator
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: (_currentPage + 1) / _totalPages,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        GameColors.primaryGreen,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    '${_currentPage + 1} / $_totalPages',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: GameColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Progress indicator
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: (_currentPage + 1) / _totalPages,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      GameColors.primaryGreen,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  '${_currentPage + 1} / $_totalPages',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: GameColors.textPrimary,
-                  ),
-                ),
-              ],
+      
+            // Tutorial content
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (page) {
+                  setState(() => _currentPage = page);
+                  _audio.playMenuTransition();
+                },
+                children: [
+                  _buildWelcomePage(),
+                  _buildObjectivePage(),
+                  _buildFieldLayoutPage(),
+                  _buildPlayerRolesPage(),
+                  _buildGameRulesPage(),
+                  _buildControlsPage(),
+                  _buildScoringPage(),
+                ],
+              ),
             ),
-          ),
-
-          // Tutorial content
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (page) {
-                setState(() => _currentPage = page);
-                _audio.playMenuTransition();
-              },
-              children: [
-                _buildWelcomePage(),
-                _buildObjectivePage(),
-                _buildFieldLayoutPage(),
-                _buildPlayerRolesPage(),
-                _buildGameRulesPage(),
-                _buildControlsPage(),
-                _buildScoringPage(),
-              ],
-            ),
-          ),
-
-          // Navigation buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentPage > 0)
+      
+            // Navigation buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentPage > 0)
+                    ElevatedButton.icon(
+                      onPressed: _previousPage,
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Sebelumnya'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[600],
+                      ),
+                    )
+                  else
+                    const SizedBox(),
+      
                   ElevatedButton.icon(
-                    onPressed: _previousPage,
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Sebelumnya'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[600],
-                    ),
-                  )
-                else
-                  const SizedBox(),
-
-                ElevatedButton.icon(
-                  onPressed:
+                    onPressed:
+                        _currentPage == _totalPages - 1
+                            ? _completeTutorial
+                            : _nextPage,
+                    icon: Icon(
                       _currentPage == _totalPages - 1
-                          ? _completeTutorial
-                          : _nextPage,
-                  icon: Icon(
-                    _currentPage == _totalPages - 1
-                        ? Icons.check
-                        : Icons.arrow_forward,
+                          ? Icons.check
+                          : Icons.arrow_forward,
+                    ),
+                    label: Text(
+                      _currentPage == _totalPages - 1 ? 'Selesai' : 'Selanjutnya',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: GameColors.primaryGreen,
+                    ),
                   ),
-                  label: Text(
-                    _currentPage == _totalPages - 1 ? 'Selesai' : 'Selanjutnya',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: GameColors.primaryGreen,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: 25),
+          ],
+        ),
       ),
     );
   }

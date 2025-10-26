@@ -26,100 +26,103 @@ class _EgrangTutorialScreenState extends State<EgrangTutorialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: GameColors.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Tutorial Egrang'),
-        backgroundColor: GameColors.teamAColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Progress indicator
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: (_currentPage + 1) / _totalPages,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      GameColors.teamAColor,
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: GameColors.backgroundColor,
+        appBar: AppBar(
+          title: const Text('Tutorial Egrang'),
+          backgroundColor: GameColors.teamAColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            // Progress indicator
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: (_currentPage + 1) / _totalPages,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        GameColors.teamAColor,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  '${_currentPage + 1} / $_totalPages',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: GameColors.textPrimary,
+                  const SizedBox(width: 16),
+                  Text(
+                    '${_currentPage + 1} / $_totalPages',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: GameColors.textPrimary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-
-          // Tutorial content
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (page) {
-                setState(() => _currentPage = page);
-                HapticFeedback.lightImpact();
-              },
-              children: [
-                _buildWelcomePage(),
-                _buildAboutPage(),
-                _buildEquipmentPage(),
-                _buildFieldPage(),
-                _buildRulesPage(),
-                _buildTechniquePage(),
-                _buildBenefitsPage(),
-              ],
+      
+            // Tutorial content
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (page) {
+                  setState(() => _currentPage = page);
+                  HapticFeedback.lightImpact();
+                },
+                children: [
+                  _buildWelcomePage(),
+                  _buildAboutPage(),
+                  _buildEquipmentPage(),
+                  _buildFieldPage(),
+                  _buildRulesPage(),
+                  _buildTechniquePage(),
+                  _buildBenefitsPage(),
+                ],
+              ),
             ),
-          ),
-
-          // Navigation buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentPage > 0)
+      
+            // Navigation buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentPage > 0)
+                    ElevatedButton.icon(
+                      onPressed: _previousPage,
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Sebelumnya'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[600],
+                      ),
+                    )
+                  else
+                    const SizedBox(),
+      
                   ElevatedButton.icon(
-                    onPressed: _previousPage,
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Sebelumnya'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[600],
+                    onPressed: _currentPage == _totalPages - 1
+                        ? _completeTutorial
+                        : _nextPage,
+                    icon: Icon(
+                      _currentPage == _totalPages - 1
+                          ? Icons.check
+                          : Icons.arrow_forward,
                     ),
-                  )
-                else
-                  const SizedBox(),
-
-                ElevatedButton.icon(
-                  onPressed: _currentPage == _totalPages - 1
-                      ? _completeTutorial
-                      : _nextPage,
-                  icon: Icon(
-                    _currentPage == _totalPages - 1
-                        ? Icons.check
-                        : Icons.arrow_forward,
+                    label: Text(
+                      _currentPage == _totalPages - 1 ? 'Selesai' : 'Selanjutnya',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: GameColors.teamAColor,
+                    ),
                   ),
-                  label: Text(
-                    _currentPage == _totalPages - 1 ? 'Selesai' : 'Selanjutnya',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: GameColors.teamAColor,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
