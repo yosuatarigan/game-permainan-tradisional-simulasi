@@ -74,7 +74,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
 
   Future<void> _playAudio() async {
     try {
-      await _audioPlayer.play(AssetSource('audio.mp3'));
+      await _audioPlayer.play(AssetSource('audio.mp3',  ), volume: 0.5  );
       setState(() {
         isPlaying = true;
       });
@@ -130,11 +130,57 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     _particleController.addListener(_gameLoop);
 
     guards = [
-      Guard(1, const Offset(200, 100), true, 140, _guardController),
-      Guard(2, const Offset(200, 180), true, 140, _guardController),
-      Guard(3, const Offset(200, 260), true, 140, _guardController),
-      Guard(4, const Offset(200, 340), true, 140, _guardController),
-      Guard(5, const Offset(200, 220), false, 110, _guardController),
+      Guard(
+        1,
+        const Offset(200, 100),
+        true,
+        140,
+        _guardController,
+        fieldWidth,
+        fieldHeight,
+        guardSize,
+      ),
+      Guard(
+        2,
+        const Offset(200, 180),
+        true,
+        140,
+        _guardController,
+        fieldWidth,
+        fieldHeight,
+        guardSize,
+      ),
+      Guard(
+        3,
+        const Offset(200, 260),
+        true,
+        140,
+        _guardController,
+        fieldWidth,
+        fieldHeight,
+        guardSize,
+      ),
+      Guard(
+        4,
+        const Offset(200, 340),
+        true,
+        140,
+        _guardController,
+        fieldWidth,
+        fieldHeight,
+        guardSize,
+      ),
+      Guard(
+        5,
+        const Offset(200, 220),
+        false,
+        110,
+        _guardController,
+        fieldWidth,
+
+        fieldHeight,
+        guardSize,
+      ),
     ];
   }
 
@@ -706,7 +752,7 @@ class _GobakSodorGameState extends State<GobakSodorGame>
                                 guards.map((guard) {
                                   Offset pos = guard.getCurrentPosition();
                                   return Positioned(
-                                    left: pos.dx - guardSize / 2,
+                                    left: pos.dx - guardSize / 2 ,
                                     top: pos.dy - guardSize / 2,
                                     child: Container(
                                       width: guardSize,
@@ -950,13 +996,15 @@ class _GobakSodorGameState extends State<GobakSodorGame>
     );
   }
 }
-
 class Guard {
   final int id;
   final Offset basePosition;
   final bool isHorizontal;
   final double movementRange;
   final AnimationController controller;
+  final double fieldWidth;
+  final double fieldHeight;
+  final double guardSize;
 
   Guard(
     this.id,
@@ -964,6 +1012,9 @@ class Guard {
     this.isHorizontal,
     this.movementRange,
     this.controller,
+    this.fieldWidth,
+    this.fieldHeight,
+    this.guardSize,
   );
 
   Offset getCurrentPosition() {
@@ -971,13 +1022,16 @@ class Guard {
     double movement = sin(progress * 2 * pi + id * 0.5);
 
     if (isHorizontal) {
-      double minX = 40;
-      double maxX = 350;
+      double borderLeft = 20;
+      double borderRight = fieldWidth - 20;
+      double padding = 10;
+      double minX = borderLeft + guardSize / 2 ;
+      double maxX = borderRight - guardSize / 2 - padding;
       double x = minX + (maxX - minX) * ((movement + 1) / 2);
       return Offset(x, basePosition.dy);
     } else {
       double minY = 120;
-      double maxY = 320;
+      double maxY = fieldHeight - 180;
       double y = minY + (maxY - minY) * ((movement + 1) / 2);
       return Offset(basePosition.dx, y);
     }

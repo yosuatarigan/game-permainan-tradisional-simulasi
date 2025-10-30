@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _playAudio() async {
     try {
-      await _audioPlayer.play(AssetSource('audio.mp3'));
+      await _audioPlayer.play(AssetSource('audio.mp3'), volume: 0.5);
       setState(() {
         isPlaying = true;
       });
